@@ -209,4 +209,7 @@ phpmyadmin
 # vendor directory
 vendor
 
+# some train directory
+trainDirectory
+
 # End of https://www.toptal.com/developers/gitignore/api/macos,windows,jetbrains+all,jetbrains+iml
