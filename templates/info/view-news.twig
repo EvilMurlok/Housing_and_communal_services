@@ -11,7 +11,7 @@
             <p class="card-text">{{ form_news.Content }}</p>
         </div>
         <div class="card-footer text-muted">
-            <span>Новость добавлена: {{ form_news.Created_at }}</span>
+            <span><b>Новость добавлена:</b> {{ form_news.Created_at }}</span>
         </div>
         {% if user is not null and user.Is_staff == 1 %}
             <div class="d-flex justify-content-evenly mt-3 mb-3">

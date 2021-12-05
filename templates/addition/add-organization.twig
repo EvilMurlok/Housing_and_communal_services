@@ -1,0 +1,42 @@
+{% extends 'parts/base.twig' %}
+
+{% block title %}
+    Добавление ресурсоснабжающей организации
+{% endblock %}
+
+{% block content %}
+    <h1>Форма добавления</h1>
+    {% include 'parts/_message.twig' %}
+    <form method="post" action="/add-organization-post/">
+        <div class="mb-3">
+            <label for="Organization_name" class="form-label">Наименование РО {{ form_org.Organization_name }}</label>
+            <input type="text" name="Organization_name" class="form-control" id="Organization_name" value="{{ form_org ? form_org.Organization_name }}">
+        </div>
+        <div class="mb-3">
+            <label for="Telephone_number" class="form-label">Телефон организации</label>
+            <input type="text" name="Telephone_number"
+                   class="form-control" id="Telephone_number" aria-describedby="phoneHelp" value="{{ form_org ? form_org.Telephone_number }}">
+            <div id="phoneHelp" class="form-text">Формат: 89997776655</div>
+        </div>
+        <div class="mb-3">
+            <label for="Organization_email" class="form-label">Email</label>
+            <input type="email" name="Organization_email" class="form-control" id="Organization_email" aria-describedby="emailHelp" value="{{ form_org ? form_org.Organization_email }}">
+            <div id="emailHelp" class="form-text">Формат: mail.address@address.ru(com)</div>
+        </div>
+        <div class="mb-3">
+            <label for="Organization_link" class="form-label">Ссылка на сайт</label>
+            <input type="text" name="Organization_link" class="form-control" id="Organization_link" aria-describedby="linkHelp" value="{{ form_org ? form_org.Organization_link }}">
+            <div id="linkHelp" class="form-text">Если есть</div>
+        </div>
+        <div class="mb-3">
+            <label for="Address" class="form-label">Адрес главного офиса</label>
+            <input type="text" name="Address" class="form-control" id="Address" aria-describedby="addressHelp" value="{{ form_org ? form_org.Address }}">
+            <div id="addressHelp" class="form-text">Пример формата: г. Сказочный, ул. Волшебная, д. 1, корп. 1, кв. 210</div>
+        </div>
+        <div class="mb-3">
+            <label for="Bank_details" class="form-label">Банковские реквизиты организации</label>
+            <input type="text" name="Bank_details" class="form-control" id="Bank_details" value="{{ form_org ? form_org.Bank_details }}">
+        </div>
+        <button type="submit" class="btn btn-success">Добавить организацию</button>
+    </form>
+{% endblock %}

@@ -6,11 +6,7 @@
 
 {% block content %}
     <h1>Вход на сайт для физ. лица</h1>
-    {% if message is not null %}
-        <div class="alert-danger mb-3" role="alert">
-            {{ message }}
-        </div>
-    {% endif %}
+    {% include 'parts/_message.twig' %}
     <form method="post" action="/login-consumer-post/">
         <div class="mb-3">
             <label for="Consumer_phone_email" class="form-label">Телефон или Email</label>

@@ -1,19 +1,21 @@
 <div class="sidebar-sticky">
     <ul class="list-group">
         <a href="#" class="list-group-item list-group-item-action">Тарифы</a>
-        <a href="#" class="list-group-item list-group-item-action">Ресурсоснабжающие организации</a>
+        <a href="/organization-list/" class="list-group-item list-group-item-action">Ресурсоснабжающие организации</a>
         <!-- Если человек авторизован, выводить ссылки на его документы и на доступные к оплате квитанции,
          а также оплаченные уже квитанции -->
         {% if user is not null and user.Is_staff == false %}
             <a href="/view-consumer/{{  user.Consumer_id }}/" class="list-group-item list-group-item-action">Личная информация</a>
+            <a href="#" class="list-group-item list-group-item-action">Пополнить счет</a>
             <a href="#" class="list-group-item list-group-item-action">Внести показания</a>
             <a href="#" class="list-group-item list-group-item-action">Оплаченные квитанции</a>
             <a href="#" class="list-group-item list-group-item-action">Неоплаченные квитанции</a>
         {% elseif user is not null and user.Is_staff == true %}
             <a href="/consumer-list/" class="list-group-item list-group-item-action">Список пользователей</a>
-            <a href="#" class="list-group-item list-group-item-action">Добавить тариф</a>
-            <a href="/add-news/" class="list-group-item list-group-item-action">Добавить новость</a>
             <a href="#" class="list-group-item list-group-item-action">Внести показания по пользователям</a>
+            <a href="/add-news/" class="list-group-item list-group-item-action">Добавить новость</a>
+            <a href="/add-organization/" class="list-group-item list-group-item-action">Добавить ресурсоснабжающую организацию</a>
+            <a href="#" class="list-group-item list-group-item-action">Добавить тариф</a>
         {% endif %}
     </ul>
 </div>

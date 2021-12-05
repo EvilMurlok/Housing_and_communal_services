@@ -2,7 +2,7 @@
 
 namespace App;
 
-class ValidationData{
+class ValidationNewsData {
     protected Database $database;
     protected Session $session;
 

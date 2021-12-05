@@ -9,6 +9,12 @@
     </div>
     <div class="person-page-link-block">
         {% if user is not null %}
+            {% if user.Is_staff == 1 %}
+                <span class="header-link">{{ user.Company_email }}</span>
+            {% else %}
+                <span class="header-link">{{ user.Last_name }} {{ user.First_name }}</span>
+            {% endif %}
+            <span class="header-link">|</span>
             <a class="header-link  btn-header" href="/logout/">Выход</a>
         {% else %}
             <span class="dropdown">

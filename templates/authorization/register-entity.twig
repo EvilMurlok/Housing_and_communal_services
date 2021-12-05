@@ -5,12 +5,8 @@
 {% endblock %}
 
 {% block content %}
-    <h1>Форма регистрации</h1>
-    {% if message is not null %}
-        <div class="alert-danger" role="alert">
-            {{ message }}
-        </div>
-    {% endif %}
+    <h1>Форма регистрации управляющей компании</h1>
+    {% include 'parts/_message.twig' %}
     <form method="post" action="/register-entity-post/">
         <div class="mb-3">
             <label for="Company_name" class="form-label">Наименование УК</label>
@@ -28,7 +24,7 @@
         <div class="mb-3">
             <label for="Company_email" class="form-label">Email</label>
             <input type="email" name="Company_email" class="form-control" id="Company_email" aria-describedby="emailHelp" value="{{ form ? form.Company_email }}">
-            <div id="emailHelp" class="form-text">Если есть</div>
+            <div id="emailHelp" class="form-text">Формат: mail.address@address.ru(com)</div>
         </div>
         <div class="mb-3">
             <label for="Company_link" class="form-label">Ссылка на сайт</label>

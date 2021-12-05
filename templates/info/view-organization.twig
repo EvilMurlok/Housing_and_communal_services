@@ -1,0 +1,36 @@
+{% extends 'parts/base.twig' %}
+
+{% block title %}
+    {{ form_org.Organization_name }}
+{% endblock %}
+
+{% block content %}
+    <div class="card mb-3">
+        <div class="card-body">
+            <h5 class="card-title">
+                Информация о {{ form_org.Organization_name }}
+            </h5>
+            <p class="card-text">
+                <b>Email:</b> {{ form_org.Organization_email }}
+            </p>
+            <p class="card-text">
+                <b>Телефон:</b> {{ form_org.Telephone_number }}
+            </p>
+            <p class="card-text">
+                <b>Ссылка на сайт организации:</b> {{ form_org.Organization_link }}
+            </p>
+            <p class="card-text">
+                <b>Банковские реквизиты:</b> {{ form_org.Bank_details }}
+            </p>
+            <p class="card-text">
+                <b>Адрес организации:</b> {{ form_org.Address }}
+            </p>
+        </div>
+        {% if user.Is_staff == 1 %}
+            <div class="d-flex justify-content-evenly mt-3 mb-3">
+                <a href="/edit-organization/{{ form_org.Resource_organization_id }}/" class="btn btn-success">Редактировать</a>
+                <a href="/delete-organization/{{ form_org.Resource_organization_id }}/" class="btn btn-danger">Удалить организацию</a>
+            </div>
+        {% endif %}
+    </div>
+{% endblock %}

@@ -4,9 +4,9 @@ namespace App;
 
 use JetBrains\PhpStorm\Pure;
 
-require_once "/Users/macbookair/Desktop/Housing_and_communal_services/src/additionNews/ValidationData.php";
+require_once "/Users/macbookair/Desktop/Housing_and_communal_services/src/additionNews/ValidationNewsData.php";
 
-class AdditionNews extends ValidationData
+class AdditionNews extends ValidationNewsData
 {
 
     #[Pure] public function __construct(Database $database, $session)

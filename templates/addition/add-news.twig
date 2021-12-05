@@ -5,12 +5,8 @@
 {% endblock %}
 
 {% block content %}
-    {% if message is not null %}
-        <div class="alert-{{ status }}" role="alert">
-            {{ message }}
-        </div>
-    {% endif %}
     <h1>Добавление новости</h1>
+    {% include 'parts/_message.twig' %}
     <form method="post" action="/add-news-post/">
         <div class="mb-3">
             <label for="Title" class="form-label">Название новости</label>

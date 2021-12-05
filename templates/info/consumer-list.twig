@@ -27,8 +27,8 @@
                                 $("#consumer-list").append(
                                     "<div class=\"card mb-3\"><div class=\"card-body\">" +
                                     "<h5 class=\"card-title\">" + data.Last_name + " " + data.First_name + " " + data.Patronymic + "</h5>" +
-                                    "<p class=\"card-text\"> Дата рождения: " + data.Birthday + "<br>Email: " + data.Consumer_email +
-                                    "<br>Телефон: " + data.Telephone_number + "</p></div>" +
+                                    "<p class=\"card-text\"> <b>Дата рождения:</b> " + data.Birthday + "<br><b>Email:</b> " + data.Consumer_email +
+                                    "<br><b>Телефон:</b> " + data.Telephone_number + "</p></div>" +
                                     "<div class=\"card-footer text-muted\">" +
                                     "<a href=\"/read-more-consumer/" + data.Consumer_id + "/\" class=\"btn btn-success\">Узнать больше</a></div></div>"
                                 )
@@ -46,23 +46,18 @@
 
 {% block content %}
     <h2 class="mb-3">Список пользователей сервиса</h2>
-    {% if message is not null %}
-        <script>alert({{ message }})</script>
-        <div class="alert-{{ status }}" role="alert">
-            {{ message }}
-        </div>
-    {% endif %}
+    {% include 'parts/_message.twig' %}
     <div id="consumer-list">
         {% for consumer in consumers %}
             <div class="card mb-3">
                 <div class="card-body">
                     <h5 class="card-title">{{ consumer.Last_name }} {{ consumer.First_name }} {{ consumer.Patronymic }}</h5>
                     <p class="card-text">
-                        Дата рождения: {{ consumer.Birthday }}
+                        <b>Дата рождения:</b> {{ consumer.Birthday }}
                         <br>
-                        Email: {{ consumer.Consumer_email }}
+                        <b>Email:</b> {{ consumer.Consumer_email }}
                         <br>
-                        Телефон: {{ consumer.Telephone_number }}
+                        <b>Телефон:</b> {{ consumer.Telephone_number }}
                     </p>
                 </div>
                 <div class="card-footer text-muted">

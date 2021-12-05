@@ -5,12 +5,15 @@ require __DIR__ . "/vendor/autoload.php";
 
 use App\AdditionNews;
 use App\AdditionNewsException;
+use App\AdditionOrganization;
+use App\AdditionOrganizationException;
 use App\AuthorizationConsumer;
 use App\AuthorizationConsumerException;
 use App\AuthorizationEntity;
 use App\AuthorizationEntityException;
 use App\Database;
 use App\EditionNews;
+use App\EditionOrganization;
 use App\Session;
 
 use Psr\Http\Message\ResponseInterface;
@@ -31,6 +34,10 @@ require_once "/Users/macbookair/Desktop/Housing_and_communal_services/src/Author
 require_once "/Users/macbookair/Desktop/Housing_and_communal_services/src/additionNews/AdditionNews.php";
 require_once "/Users/macbookair/Desktop/Housing_and_communal_services/src/additionNews/AdditionNewsException.php";
 require_once "/Users/macbookair/Desktop/Housing_and_communal_services/src/additionNews/EditionNews.php";
+require_once "/Users/macbookair/Desktop/Housing_and_communal_services/src/additionOrganization/AdditionOrganization.php";
+require_once "/Users/macbookair/Desktop/Housing_and_communal_services/src/additionOrganization/EditionOrganization.php";
+require_once "/Users/macbookair/Desktop/Housing_and_communal_services/src/additionOrganization/AdditionOrganizationException.php";
+
 
 $loader = new FilesystemLoader("templates");
 $twig = new Environment($loader);
@@ -73,9 +80,13 @@ $database = new Database($dsn, $username, $password);
 $authorization_entity = new AuthorizationEntity($database, $session);
 $authorization_consumer = new AuthorizationConsumer($database, $session);
 
-// addition edition block
+// addition edition news block
 $add_news = new AdditionNews($database, $session);
 $edit_news = new EditionNews($database, $session);
+
+// addition edition organization block
+$add_organization = new AdditionOrganization($database, $session);
+$edit_organization = new EditionOrganization($database, $session);
 
 // такие callback-функции должны возвращать строго $response!
 $app->get("/",
@@ -110,7 +121,7 @@ $app->get("/view-news/{news_id}/",
             "user" => $session->getData("user"),
             "message" => $session->flush("message"),
             "status" => $session->flush("status"),
-            "form_news" => $session->getData("form_news")
+            "form_news" => $session->flush("form_news")
         ]);
         $response->getBody()->write($body);
         return $response;
@@ -118,6 +129,12 @@ $app->get("/view-news/{news_id}/",
 
 $app->get("/edit-news/{news_id}/",
     function (ServerRequestInterface $request, ResponseInterface $response, $args) use ($database, $session, $twig) {
+        $query = $database->getConnection()->query(
+            "SELECT News_id, Title, Content, Is_published, Created_at FROM News
+                   WHERE News_id = {$args['news_id']}"
+        );
+        $news = $query->fetch();
+        $session->setData("form_news", $news);
         $session->setData("news_id", $args['news_id']);
         $body = $twig->render("addition/edit-news.twig", [
             "user" => $session->getData("user"),
@@ -398,7 +415,7 @@ $app->get("/consumer-list/",
     });
 
 $app->get("/read-more-consumer/{consumer_id}/",
-    function (ServerRequestInterface $request, ResponseInterface $response, $args) use ($database, $twig, $session){
+    function (ServerRequestInterface $request, ResponseInterface $response, $args) use ($database, $twig, $session) {
         $query = $database->getConnection()->query(
             "SELECT C.First_name, C.Last_name, C.Patronymic,
                               C.Consumer_email, C.Birthday, C.Telephone_number,
@@ -416,6 +433,131 @@ $app->get("/read-more-consumer/{consumer_id}/",
         ]);
         $response->getBody()->write($body);
         return $response;
+    });
+
+$app->get("/add-organization/",
+    function (ServerRequestInterface $request, ResponseInterface $response) use ($twig, $session) {
+        $body = $twig->render("addition/add-organization.twig", [
+            "user" => $session->getData("user"),
+            "message" => $session->flush("message"),
+            "form_org" => $session->flush("form_org"),
+            "status" => $session->flush("status")
+        ]);
+        $response->getBody()->write($body);
+        return $response;
+    });
+
+$app->post("/add-organization-post/",
+    function (ServerRequestInterface $request, ResponseInterface $response) use ($add_organization, $session){
+        if ($session->getData("user")["Is_staff"] != 1) {
+            $session->setData("message", "Неавторизованные пользователи не могут добавлять организации!");
+            $session->setData("status", "danger");
+            return $response->withHeader("Location", "/")
+                ->withStatus(302);
+        }
+        $params = (array)$request->getParsedBody(); // вернет все параметры, переданные через POST
+        try {
+            $add_organization->add_organization($params);
+            $session->setData("message", "Организация успешно создана!");
+            $session->setData("status", "success");
+        } catch (AdditionOrganizationException $exception) {
+            $session->setData("message", $exception->getMessage());
+            $session->setData("status", "danger");
+            $session->setData("form_org", $params);
+            return $response->withHeader("Location", "/add-organization/")
+                ->withStatus(302);
+        }
+        return $response->withHeader("Location", "/add-organization/")
+            ->withStatus(302);
 });
+
+$app->get("/organization-list/",
+    function (ServerRequestInterface $request, ResponseInterface $response) use ($database, $session, $twig) {
+        $query = $database->getConnection()->query(
+            "SELECT Resource_organization_id, Organization_name, Telephone_number, Organization_email, 
+                              Organization_link, Bank_details, Address
+                       FROM ResourceOrganization
+                       ORDER BY Organization_name"
+        );
+        $organizations = $query->fetchAll();
+        $body = $twig->render("info/organization-list.twig", [
+            "user" => $session->getData("user"),
+            "organizations" => $organizations,
+            "message" => $session->flush("message"),
+            "status" => $session->flush("status")
+        ]);
+        $response->getBody()->write($body);
+        return $response;
+    });
+
+$app->get("/view-organization/{organization_id}/",
+    function (ServerRequestInterface $request, ResponseInterface $response, $args) use ($database, $session, $twig) {
+        $query = $database->getConnection()->query(
+            "SELECT Resource_organization_id, Organization_name, Telephone_number, Organization_email, 
+                              Organization_link, Bank_details, Address 
+                       FROM ResourceOrganization
+                       WHERE Resource_organization_id = {$args["organization_id"]}"
+        );
+        $organization = $query->fetch();
+        $session->setData("form_org", $organization);
+        $body = $twig->render("info/view-organization.twig", [
+            "user" => $session->getData("user"),
+            "message" => $session->flush("message"),
+            "status" => $session->flush("status"),
+            "form_org" => $session->flush("form_org")
+        ]);
+        $response->getBody()->write($body);
+        return $response;
+    });
+
+$app->get("/edit-organization/{organization_id}/",
+    function (ServerRequestInterface $request, ResponseInterface $response, $args) use ($database, $session, $twig) {
+        $query = $database->getConnection()->query(
+            "SELECT Resource_organization_id, Organization_name, Telephone_number, Organization_email, 
+                              Organization_link, Bank_details, Address 
+                       FROM ResourceOrganization
+                       WHERE Resource_organization_id = {$args["organization_id"]}"
+        );
+        $organization = $query->fetch();
+        $session->setData("form_org", $organization);
+        $body = $twig->render("addition/edit-organization.twig", [
+            "user" => $session->getData("user"),
+            "message" => $session->flush("message"),
+            "form_org" => $session->flush("form_org"),
+            "status" => $session->flush("status"),
+        ]);
+        $response->getBody()->write($body);
+        return $response;
+    });
+
+$app->post("/edit-organization-post/{organization_id}/",
+    function (ServerRequestInterface $request, ResponseInterface $response, $args) use ($edit_organization, $session) {
+        $params = (array)$request->getParsedBody(); // вернет все параметры, переданные через POST
+        try {
+            $edit_organization->edit_organization($params, $args["organization_id"]);
+            $session->setData("message", "Информация об организации успешно обновлена!");
+            $session->setData("status", "success");
+        } catch (AdditionOrganizationException $exception) {
+            $session->setData("message", $exception->getMessage());
+            $session->setData("status", "danger");
+            $session->setData("form_org", $params);
+            return $response->withHeader("Location", "/edit-organization/{$args["organization_id"]}/")
+                ->withStatus(302);
+        }
+        return $response->withHeader("Location", "/organization-list/")
+            ->withStatus(302);
+    });
+
+$app->get("/delete-organization/{organization_id}/",
+    function (ServerRequestInterface $request, ResponseInterface $response, $args) use ($database, $session) {
+        $required_organization_id = $args["organization_id"];
+        $database->getConnection()->query(
+            "DELETE FROM ResourceOrganization WHERE Resource_organization_id = $required_organization_id"
+        );
+        $session->setData("message", "Организация успешно удалена!");
+        $session->setData("status", "success");
+        return $response->withHeader("Location", "/organization-list/")
+            ->withStatus(302);
+    });
 
 $app->run();
