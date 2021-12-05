@@ -28,9 +28,9 @@ require_once "/Users/macbookair/Desktop/Housing_and_communal_services/src/Author
 require_once "/Users/macbookair/Desktop/Housing_and_communal_services/src/Authorization/AuthorizationConsumerException.php";
 require_once "/Users/macbookair/Desktop/Housing_and_communal_services/src/Authorization/AuthorizationEntity.php";
 require_once "/Users/macbookair/Desktop/Housing_and_communal_services/src/Authorization/AuthorizationEntityException.php";
-require_once "/Users/macbookair/Desktop/Housing_and_communal_services/src/addition/AdditionNews.php";
-require_once "/Users/macbookair/Desktop/Housing_and_communal_services/src/addition/AdditionNewsException.php";
-require_once "/Users/macbookair/Desktop/Housing_and_communal_services/src/addition/EditionNews.php";
+require_once "/Users/macbookair/Desktop/Housing_and_communal_services/src/additionNews/AdditionNews.php";
+require_once "/Users/macbookair/Desktop/Housing_and_communal_services/src/additionNews/AdditionNewsException.php";
+require_once "/Users/macbookair/Desktop/Housing_and_communal_services/src/additionNews/EditionNews.php";
 
 $loader = new FilesystemLoader("templates");
 $twig = new Environment($loader);
@@ -40,17 +40,17 @@ $session = new Session();
 // и где бы мы ни захотели воспользоваться сессией, она уже будет создана
 $sessionMiddleware = function (ServerRequestInterface $request, RequestHandlerInterface $handler) use ($session) {
     $session->start();
-    $session_timeout = 120; // in seconds
-    if (!isset($_SESSION['last_visit'])) {
-        $_SESSION['last_visit'] = time();
-    }
-    if(isset($_SESSION['user']) && (time() - $_SESSION['last_visit']) > $session_timeout) {
-        unset($_SESSION['last_visit']);
-        unset($_SESSION);
-        header("Location: /logout/");
-        exit;
-    }
-    $_SESSION['last_visit'] = time();
+//    $session_timeout = 120; // in seconds
+//    if (!isset($_SESSION['last_visit'])) {
+//        $_SESSION['last_visit'] = time();
+//    }
+//    if (isset($_SESSION['user']) && (time() - $_SESSION['last_visit']) > $session_timeout) {
+//        unset($_SESSION['last_visit']);
+//        unset($_SESSION);
+//        header("Location: /logout/");
+//        exit;
+//    }
+//    $_SESSION['last_visit'] = time();
     $response = $handler->handle($request);
     $session->save();
 //    var_dump($_SESSION);
@@ -337,7 +337,7 @@ $app->get("/logout/",
 
         $session->setData('user', null);
 
-        if (http_response_code() == 302){
+        if (http_response_code() == 302) {
             $body = $twig->render("index.twig", [
                 "message" => "Ваша сессия истекла!",
                 "status" => "dander"
@@ -361,7 +361,7 @@ $app->get("/contacts/",
 
 // тут запросы к нескольким таблицам!
 $app->get("/view-consumer/{consumer_id}/",
-    function (ServerRequestInterface $request, ResponseInterface $response, $args) use ($database, $twig, $session){
+    function (ServerRequestInterface $request, ResponseInterface $response, $args) use ($database, $twig, $session) {
         $query = $database->getConnection()->query(
             "SELECT A.City_name, A.Street, A.House, A.Housing, MC.Company_name, MC.Address, MC.Full_name_boss,
                               MC.Company_email, MC.Telephone_number
@@ -371,7 +371,7 @@ $app->get("/view-consumer/{consumer_id}/",
                        WHERE C.Consumer_id = {$args["consumer_id"]}"
         );
         $consumer_info = $query->fetch();
-        $body = $twig->render("info/user-info.twig", [
+        $body = $twig->render("info/consumer-info.twig", [
             "user" => $session->getData("user"),
             "consumer_info" => $consumer_info,
 
@@ -379,5 +379,43 @@ $app->get("/view-consumer/{consumer_id}/",
         $response->getBody()->write($body);
         return $response;
     });
+
+$app->get("/consumer-list/",
+    function (ServerRequestInterface $request, ResponseInterface $response) use ($database, $session, $twig) {
+        $query = $database->getConnection()->query(
+            "SELECT Consumer_id, First_name, Last_name, Patronymic, 
+                              Consumer_email, Birthday, Telephone_number
+                       FROM Consumer 
+                       ORDER BY Last_name, First_name LIMIT 4"
+        );
+        $consumers = $query->fetchAll();
+        $body = $twig->render("info/consumer-list.twig", [
+            "user" => $session->getData("user"),
+            "consumers" => $consumers
+        ]);
+        $response->getBody()->write($body);
+        return $response;
+    });
+
+$app->get("/read-more-consumer/{consumer_id}/",
+    function (ServerRequestInterface $request, ResponseInterface $response, $args) use ($database, $twig, $session){
+        $query = $database->getConnection()->query(
+            "SELECT C.First_name, C.Last_name, C.Patronymic,
+                              C.Consumer_email, C.Birthday, C.Telephone_number,
+                              C.Passport_series, C.Passport_number, C.Flat, C.Living_space,
+                              C.Personal_acc_hcs, C.Personal_acc_landline_ph, C.Personal_acc_long_dist_ph,
+                              A.City_name, A.Street, A.House, A.Housing
+                       FROM Consumer AS C 
+                       INNER JOIN Address A ON C.Address_id = A.Address_id 
+                       WHERE C.Consumer_id = {$args["consumer_id"]}"
+        );
+        $consumer_info = $query->fetch();
+        $body = $twig->render("info/read-more-consumer.twig", [
+            "user" => $session->getData("user"),
+            "consumer_info" => $consumer_info
+        ]);
+        $response->getBody()->write($body);
+        return $response;
+});
 
 $app->run();

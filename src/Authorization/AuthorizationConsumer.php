@@ -146,8 +146,11 @@ class AuthorizationConsumer{
             throw new AuthorizationConsumerException("Номер дома не может быть отрицательным!");
         }
 
+        if ($data["Housing"] == null){
+            $data["Housing"] = 1;
+        }
         //Housing block
-        if ($data['Housing'] <= 0){
+        if ($data['Housing'] < 0){
             throw new AuthorizationConsumerException("Номер корпуса не может быть отрицательным!");
         }
 

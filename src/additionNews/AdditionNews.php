@@ -4,7 +4,7 @@ namespace App;
 
 use JetBrains\PhpStorm\Pure;
 
-require_once "/Users/macbookair/Desktop/Housing_and_communal_services/src/addition/ValidationData.php";
+require_once "/Users/macbookair/Desktop/Housing_and_communal_services/src/additionNews/ValidationData.php";
 
 class AdditionNews extends ValidationData
 {

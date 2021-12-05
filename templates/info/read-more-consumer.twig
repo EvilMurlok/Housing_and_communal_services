@@ -1,0 +1,53 @@
+{% extends 'parts/base.twig' %}
+
+{% block title %}
+    {{ consumer_info.Last_name }} {{ consumer_info.First_name }}
+{% endblock %}
+
+{% block content %}
+    <div class="card mb-3">
+        <div class="card-body">
+            <h5 class="card-title">
+                Личные данные пользователя {{ consumer_info.Last_name }}
+                {{ consumer_info.First_name }} {{ consumer_info.Patronymic }}
+            </h5>
+            <p class="card-text">
+                Дата рождения: {{ consumer_info.Birthday }}
+            </p>
+            <p>
+                Email: {{ consumer_info.Consumer_email }}
+            </p>
+            <p>
+                Телефон: {{ consumer_info.Telephone_number }}
+            </p>
+            <p>
+                Серия паспорта: {{ consumer_info.Passport_series }}
+            </p>
+            <p>
+                Номер паспорта: {{ consumer_info.Passport_number }}
+            </p>
+            <p>
+                Лицевой счет по жилищно-коммунальным услугам: {{ consumer_info.Personal_acc_hcs }}
+            </p>
+            <p>
+                Лицевой счет по оплате городского телефона: {{ consumer_info.Personal_acc_landline_ph }}
+            </p>
+            <p>
+                Лицевой счет по оплате междугороднего телефона: {{ consumer_info.Personal_acc_long_dist_ph }}
+            </p>
+            <p>
+                Метраж квартиры: {{ consumer_info.Living_space }}
+            </p>
+            <p>
+                Адрес проживания:
+                <span>
+                    г. {{ consumer_info.City_name }}, ул. {{ consumer_info.Street }}, д. {{ consumer_info.House }}
+                </span>
+                {% if consumer_info.Housing != 0 %}
+                    <span>, корп. {{ consumer_info.Housing }}</span>
+                {% endif %}
+                <span>, кв. {{ consumer_info.Flat }}.</span>
+            </p>
+        </div>
+    </div>
+{% endblock %}
