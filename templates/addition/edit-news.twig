@@ -1,0 +1,29 @@
+{% extends 'parts/base.twig' %}
+
+{% block title %}
+    Редактирование {{ form_news.Title }}
+{% endblock %}
+
+{% block content %}
+    <h1>Редактирование {{ form_news.Title }}</h1>
+    {% if message is not null %}
+        <div class="alert-danger mb-3" role="alert">
+            {{ message }}
+        </div>
+    {% endif %}
+    <form method="post" action="/edit-news-post/{{ news_id }}/">
+        <div class="mb-3">
+            <label for="Title" class="form-label">Название новости</label>
+            <input type="text" name="Title" class="form-control" id="Title" value="{{ form_news ? form_news.Title }}">
+        </div>
+        <div class="mb-3">
+            <label for="Content" class="form-label">Содержимое новости</label>
+            <input type="text" name="Content" class="form-control" id="Content" value="{{ form_news.Content }}">
+        </div>
+        <div class="mb-3 form-check">
+            <input type="checkbox" class="form-check-input" id="Is_published" name="Is_published" value="on">
+            <label class="form-check-label" for="Is_published">Опубликовано</label>
+        </div>
+        <button type="submit" class="btn btn-success">Изменить новость</button>
+    </form>
+{% endblock %}

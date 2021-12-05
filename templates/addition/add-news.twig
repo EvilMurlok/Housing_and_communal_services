@@ -1,0 +1,29 @@
+{% extends 'parts/base.twig' %}
+
+{% block title %}
+    Добавить новость
+{% endblock %}
+
+{% block content %}
+    {% if message is not null %}
+        <div class="alert-{{ status }}" role="alert">
+            {{ message }}
+        </div>
+    {% endif %}
+    <h1>Добавление новости</h1>
+    <form method="post" action="/add-news-post/">
+        <div class="mb-3">
+            <label for="Title" class="form-label">Название новости</label>
+            <input type="text" name="Title" class="form-control" id="Title" value="{{ form_news ? form_news.Title }}">
+        </div>
+        <div class="mb-3">
+            <label for="Content" class="form-label">Содержимое новости</label>
+            <textarea class="form-control" id="Content" rows="5" name="Content"></textarea>
+        </div>
+        <div class="mb-3 form-check">
+            <input type="checkbox" class="form-check-input" id="Is_published" name="Is_published">
+            <label class="form-check-label" for="Is_published">Опубликовано</label>
+        </div>
+        <button type="submit" class="btn btn-success">Добавить новость</button>
+    </form>
+{% endblock %}

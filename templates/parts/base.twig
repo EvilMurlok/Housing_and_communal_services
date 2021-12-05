@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta http-equiv="Pragma" content="no-cache">
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="shortcut icon" href="/static/media/nav/logo.png" type="image/png">
+        <link href="/static/css/bootstrap.min.css" rel="stylesheet">
+        <link href="/static/css/style.css" rel="stylesheet">
+        <link href="/static/css/fontello.css" rel="stylesheet">
+        <title>{% block title %}{% endblock %}</title>
+        {% block ajax %}{% endblock %}
+    </head>
+    <body>
+        <div class="container">
+            {% include 'parts/_nav.twig' %}
+            <div class="row">
+                <div class="col-md-3 mb-5">
+                    {% include 'parts/_sidebar.twig' %}
+                </div>
+                <div class="col-md-9 mb-5">
+                    {% block content %}{% endblock %}
+                </div>
+            </div>
+            {% include 'parts/_footer.twig' %}
+        </div>
+
+
+        <script src="/static/js/bootstrap.bundle.min.js"></script>
+    </body>
+</html>

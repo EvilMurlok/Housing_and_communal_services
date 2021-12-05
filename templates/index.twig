@@ -1,0 +1,76 @@
+{% extends 'parts/base.twig' %}
+
+{% block title %}
+    Главная
+{% endblock %}
+
+{% block ajax %}
+    <script src="/static/js/jquery-3.6.0.min.js">
+    </script>
+    <script type="text/javascript">
+        $(document).ready(function () {
+            let num = 8;
+            let inProcess = false;
+            // это будет запускаться тогда, когда страница будет прокручиваться
+            $(window).scroll(function () {
+                if ($(window).scrollTop() + $(window).height() >= $(document).height() && !inProcess) {
+                    $.ajax({
+                        url: "src/addition/load.php",
+                        method: "GET",
+                        data: {"num": num},
+                        beforeSend: function () {
+                            inProcess = true;
+                        }
+                    }).done(function (data) {
+                        data = jQuery.parseJSON(data)
+                        if (data.length > 0) {
+                            $.each(data, function (index, data) {
+                                $("#news-list").append(
+                                    "<div class=\"card mb-3\">" +
+                                    "<div class=\"card-body\">" +
+                                    "<h5 class=\"card-title\">" + data.Title + "</h5>" +
+                                    "<p class=\"card-text\">" + data.Content.slice(0, 400) + "..." + "</p>" +
+                                    "<a href=\"/view-news/" + data.News_id + "/\" class=\"btn btn-success\">Читать больше</a></div>" +
+                                    "<div class=\"card-footer text-muted\"><span>Новость добавлена: " + data.Created_at +
+                                    "</span></div></div>"
+                                )
+                            });
+                            inProcess = false;
+                            num += 4;
+                        }
+                    });
+                }
+            })
+        })
+    </script>
+
+{% endblock %}
+
+{% block content %}
+    <h1>Новости района Ивановское</h1>
+    {% if message is not null %}
+        <script>alert({{ message }})</script>
+        <div class="alert-{{ status }}" role="alert">
+            {{ message }}
+        </div>
+    {% endif %}
+    {% if user is not null and user.Is_staff == 1 %}
+        <p>Приветствуем, {{ user.Company_name|escape }} ({{ user.Company_email }})</p>
+    {% endif %}
+    <div id="news-list">
+        {% for n in form_news %}
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">{{ n.Title }}</h5>
+                    <p class="card-text">
+                        {{ n.Content|striptags|length > 400 ? n.Content|striptags|slice(0, 400) ~ '...' : n.Content|striptags }}
+                    </p>
+                    <a href="/view-news/{{ n.News_id }}/" class="btn btn-success">Читать больше</a>
+                </div>
+                <div class="card-footer text-muted">
+                    <span>Новость добавлена: {{ n.Created_at }}</span>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% endblock %}

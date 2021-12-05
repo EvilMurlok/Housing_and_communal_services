@@ -1,0 +1,27 @@
+{% extends 'parts/base.twig' %}
+
+{% block title %}
+    Вход для физ. лиц
+{% endblock %}
+
+{% block content %}
+    <h1>Вход на сайт для физ. лица</h1>
+    {% if message is not null %}
+        <div class="alert-danger mb-3" role="alert">
+            {{ message }}
+        </div>
+    {% endif %}
+    <form method="post" action="/login-consumer-post/">
+        <div class="mb-3">
+            <label for="Consumer_phone_email" class="form-label">Телефон или Email</label>
+            <input type="text" name="Consumer_phone_email" class="form-control" id="Consumer_phone_email" aria-describedby="phoneEmailHelp" value="{{ form ? form.Company_phone_email }}">
+            <div id="phoneEmailHelp" class="form-text">Формат: 89997776655 или user@domain.ru(com)</div>
+        </div>
+        <div class="mb-3">
+            <label for="Consumer_password" class="form-label">Пароль</label>
+            <input type="password" name="Consumer_password" class="form-control" id="Consumer_password">
+        </div>
+
+        <button type="submit" class="btn btn-success">Войти</button>
+    </form>
+{% endblock %}

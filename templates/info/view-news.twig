@@ -1,0 +1,23 @@
+{% extends 'parts/base.twig' %}
+
+{% block title %}
+    {{ form_news.Title }}
+{% endblock %}
+
+{% block content %}
+    <div class="card mb-3">
+        <div class="card-body">
+            <h5 class="card-title">{{ form_news.Title }}</h5>
+            <p class="card-text">{{ form_news.Content }}</p>
+        </div>
+        <div class="card-footer text-muted">
+            <span>Новость добавлена: {{ form_news.Created_at }}</span>
+        </div>
+        {% if user is not null and user.Is_staff == 1 %}
+            <div class="d-flex justify-content-evenly mt-3 mb-3">
+                <a href="/edit-news/{{ form_news.News_id }}/" class="btn btn-success">Редактировать</a>
+                <a href="/delete-news/{{ form_news.News_id }}/" class="btn btn-danger">Удалить новость</a>
+            </div>
+        {% endif %}
+    </div>
+{% endblock %}

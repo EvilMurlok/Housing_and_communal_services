@@ -1,0 +1,53 @@
+{% extends 'parts/base.twig' %}
+
+{% block title %}
+Регистрация юр. лица
+{% endblock %}
+
+{% block content %}
+    <h1>Форма регистрации</h1>
+    {% if message is not null %}
+        <div class="alert-danger" role="alert">
+            {{ message }}
+        </div>
+    {% endif %}
+    <form method="post" action="/register-entity-post/">
+        <div class="mb-3">
+            <label for="Company_name" class="form-label">Наименование УК</label>
+            <input type="text" name="Company_name" class="form-control" id="Company_name" value="{{ form ? form.Company_name }}">
+        </div>
+        <div class="mb-3">
+            <label for="Full_name_boss" class="form-label">ФИО Руководителя</label>
+            <input type="text" name="Full_name_boss" class="form-control" id="Full_name_boss" value="{{ form ? form.Full_name_boss }}">
+        </div>
+        <div class="mb-3">
+            <label for="Telephone_number" class="form-label">Телефон компании </label>
+            <input type="text" name="Telephone_number" class="form-control" id="Telephone_number" aria-describedby="phoneHelp" value="{{ form ? form.Telephone_number }}">
+            <div id="phoneHelp" class="form-text">Формат: 89997776655</div>
+        </div>
+        <div class="mb-3">
+            <label for="Company_email" class="form-label">Email</label>
+            <input type="email" name="Company_email" class="form-control" id="Company_email" aria-describedby="emailHelp" value="{{ form ? form.Company_email }}">
+            <div id="emailHelp" class="form-text">Если есть</div>
+        </div>
+        <div class="mb-3">
+            <label for="Company_link" class="form-label">Ссылка на сайт</label>
+            <input type="text" name="Company_link" class="form-control" id="Company_link" aria-describedby="linkHelp" value="{{ form ? form.Company_link }}">
+            <div id="linkHelp" class="form-text">Если есть</div>
+        </div>
+        <div class="mb-3">
+            <label for="Address" class="form-label">Адрес </label>
+            <input type="text" name="Address" class="form-control" id="Address" aria-describedby="addressHelp" value="{{ form ? form.Address }}">
+            <div id="addressHelp" class="form-text">Пример формата: г. Сказочный, ул. Волшебная, д. 1, корп. 1, кв. 210</div>
+        </div>
+        <div class="mb-3">
+            <label for="Company_password" class="form-label">Пароль</label>
+            <input type="password" name="Company_password" class="form-control" id="Company_password">
+        </div>
+        <div class="mb-3">
+            <label for="confirm_password" class="form-label">Повторите пароль</label>
+            <input type="password" name="confirm_password" class="form-control" id="confirm_password">
+        </div>
+        <button type="submit" class="btn btn-success">Зарегистрироваться</button>
+    </form>
+{% endblock %}

@@ -1,0 +1,27 @@
+{% extends 'parts/base.twig' %}
+
+{% block title %}
+    Вход для юр. лиц
+{% endblock %}
+
+{% block content %}
+    <h1>Вход на сайт для юр. лица</h1>
+    {% if message is not null %}
+        <div class="alert-danger mb-3" role="alert">
+            {{ message }}
+        </div>
+    {% endif %}
+    <form method="post" action="/login-entity-post/">
+        <div class="mb-3">
+            <label for="Company_phone_email" class="form-label">Телефон или Email</label>
+            <input type="text" name="Company_phone_email" class="form-control" id="Company_phone_email" aria-describedby="phoneEmailHelp" arvalue="{{ form ? form.CompanyPhoneEmail }}">
+            <div id="phoneEmailHelp" class="form-text">Формат: 89997776655 или user@domain.ru(com)</div>
+        </div>
+        <div class="mb-3">
+            <label for="Company_password" class="form-label">Пароль</label>
+            <input type="password" name="Company_password" class="form-control" id="Company_password">
+        </div>
+
+        <button type="submit" class="btn btn-success">Войти</button>
+    </form>
+{% endblock %}

@@ -1,0 +1,23 @@
+{
+    "name": "macbookair/hcs-site",
+    "description": "This is an utility bills service.",
+    "type": "project",
+    "autoload": {
+        "psr-4": {
+            "Macbookair\\HcsSite\\": "src/ "
+        }
+    },
+    "authors": [
+        {
+            "name": "Ilya Panin",
+            "email": "prokyror_311200@mail.ru"
+        }
+    ],
+    "minimum-stability": "stable",
+    "require": {
+        "twig/twig": "^3.3",
+        "slim/slim": "^4.9",
+        "slim/psr7": "^1.5",
+        "ext-pdo": "*"
+    }
+}
