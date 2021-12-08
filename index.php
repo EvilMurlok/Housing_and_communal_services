@@ -47,20 +47,22 @@ $session = new Session();
 // и где бы мы ни захотели воспользоваться сессией, она уже будет создана
 $sessionMiddleware = function (ServerRequestInterface $request, RequestHandlerInterface $handler) use ($session) {
     $session->start();
-//    $session_timeout = 120; // in seconds
-//    if (!isset($_SESSION['last_visit'])) {
-//        $_SESSION['last_visit'] = time();
-//    }
-//    if (isset($_SESSION['user']) && (time() - $_SESSION['last_visit']) > $session_timeout) {
-//        unset($_SESSION['last_visit']);
-//        unset($_SESSION);
-//        header("Location: /logout/");
-//        exit;
-//    }
-//    $_SESSION['last_visit'] = time();
+    $session_timeout = 120; // in seconds
+    if (!isset($_SESSION['last_visit'])) {
+        $_SESSION['last_visit'] = time();
+    }
+    if (isset($_SESSION['user']) && (time() - $_SESSION['last_visit']) > $session_timeout) {
+        $_SESSION = array();
+        setcookie("add_news", "", -time() + 60, "/");
+        setcookie("add_organization", "", -time() + 60);
+        header("Location: /logout/");
+        exit;
+    }
+    $_SESSION['last_visit'] = time();
     $response = $handler->handle($request);
     $session->save();
-//    var_dump($_SESSION);
+    var_dump($_SESSION);
+    var_dump($_COOKIE);
     return $response;
 };
 
@@ -88,6 +90,48 @@ $edit_news = new EditionNews($database, $session);
 $add_organization = new AdditionOrganization($database, $session);
 $edit_organization = new EditionOrganization($database, $session);
 
+function renderPageByQuery($query, $session, $twig, $response, $name_render_page, $name_form = "form", $need_one = 0): ResponseInterface
+{
+    $rows = null;
+    if ($need_one == 1) {
+        $rows = $query->fetch();
+    } else {
+        $rows = $query->fetchAll();
+    }
+    $session->setData($name_form, $rows);
+    $body = $twig->render($name_render_page, [
+        "user" => $session->getData("user"),
+        "message" => $session->get_and_set_null("message"),
+        "status" => $session->flush("status"),
+        $name_form => $session->flush($name_form)
+    ]);
+    $response->getBody()->write($body);
+    return $response;
+}
+
+function renderPage($session, $twig, $response, $name_render_page, $name_form = "form"): ResponseInterface
+{
+    $body = $twig->render($name_render_page, [
+        "user" => $session->getData("user"),
+        "message" => $session->flush("message"),
+        "status" => $session->flush("status"),
+        $name_form => $session->flush($name_form)
+    ]);
+    $response->getBody()->write($body);
+    return $response;
+}
+
+function checkUserRights($session, $response, $message): bool
+{
+    if ($session->getData("user") == null or $session->getData("user")["Is_staff"] != 1) {
+        $session->setData("message", $message);
+        $session->setData("status", "danger");
+        return false;
+    }
+    return true;
+}
+
+
 // такие callback-функции должны возвращать строго $response!
 $app->get("/",
     function (ServerRequestInterface $request, ResponseInterface $response) use ($twig, $session, $database) {
@@ -97,16 +141,8 @@ $app->get("/",
                    WHERE Is_published = 1
                    ORDER BY Created_at DESC LIMIT 8"
         );
-        $news = $query->fetchAll();
-        $session->setData("form_news", $news);
-        $body = $twig->render("index.twig", [
-            "user" => $session->getData("user"),
-            "message" => $session->get_and_set_null("message"),
-            "status" => $session->flush("status"),
-            "form_news" => $session->flush("form_news")
-        ]);
-        $response->getBody()->write($body);
-        return $response;
+        return renderPageByQuery($query, $session, $twig, $response,
+            "index.twig", "form_news");
     });
 
 $app->get("/view-news/{news_id}/",
@@ -115,36 +151,21 @@ $app->get("/view-news/{news_id}/",
             "SELECT News_id, Title, Content, Is_published, Created_at FROM News
                    WHERE News_id = {$args['news_id']}"
         );
-        $news = $query->fetch();
-        $session->setData("form_news", $news);
-        $body = $twig->render("info/view-news.twig", [
-            "user" => $session->getData("user"),
-            "message" => $session->flush("message"),
-            "status" => $session->flush("status"),
-            "form_news" => $session->flush("form_news")
-        ]);
-        $response->getBody()->write($body);
-        return $response;
+        return renderPageByQuery($query, $session, $twig, $response,
+            "info/view-news.twig", "form_news", 1);
     });
 
 $app->get("/edit-news/{news_id}/",
     function (ServerRequestInterface $request, ResponseInterface $response, $args) use ($database, $session, $twig) {
+        if (!checkUserRights($session, $response, "Обычные пользователи не могут редактировать новости")) {
+            return $response->withHeader("Location", "/")->withStatus(302);
+        }
         $query = $database->getConnection()->query(
             "SELECT News_id, Title, Content, Is_published, Created_at FROM News
                    WHERE News_id = {$args['news_id']}"
         );
-        $news = $query->fetch();
-        $session->setData("form_news", $news);
-        $session->setData("news_id", $args['news_id']);
-        $body = $twig->render("addition/edit-news.twig", [
-            "user" => $session->getData("user"),
-            "message" => $session->flush("message"),
-            "form_news" => $session->flush("form_news"),
-            "status" => $session->flush("status"),
-            "news_id" => $session->flush("news_id")
-        ]);
-        $response->getBody()->write($body);
-        return $response;
+        return renderPageByQuery($query, $session, $twig, $response,
+            "addition/edit-news.twig", "form_news", 1);
     });
 
 $app->post("/edit-news-post/{news_id}/",
@@ -167,6 +188,9 @@ $app->post("/edit-news-post/{news_id}/",
 
 $app->get('/delete-news/{news_id}/',
     function (ServerRequestInterface $request, ResponseInterface $response, $args) use ($database, $session) {
+        if (!checkUserRights($session, $response, "Обычные пользователи не могут удалять новости")) {
+            return $response->withHeader("Location", "/")->withStatus(302);
+        }
         $required_news_id = $args["news_id"];
         $database->getConnection()->query(
             "DELETE FROM News WHERE News_id = $required_news_id"
@@ -179,31 +203,26 @@ $app->get('/delete-news/{news_id}/',
 
 $app->get("/add-news/",
     function (ServerRequestInterface $request, ResponseInterface $response) use ($twig, $session) {
-
-        $body = $twig->render("addition/add-news.twig", [
-            "user" => $session->getData("user"),
-            "message" => $session->flush("message"),
-            "status" => $session->flush("status"),
-            "form_news" => $session->flush("form_news")
-        ]);
-        $response->getBody()->write($body);
-        return $response;
+        if (!checkUserRights($session, $response, "Обычные пользователи не могут добавлять новости")) {
+            return $response->withHeader("Location", "/")->withStatus(302);
+        }
+        if (isset($_COOKIE["add_news"]) and $_COOKIE["add_news"] == "done") {
+            $session->setData("message", "За одну сессию возможно только одно добавление новости!");
+            $session->setData("status", "warning");
+            return $response->withHeader("Location", "/")
+                ->withStatus(302);
+        }
+        return renderPage($session, $twig, $response, "addition/add-news.twig", "form_news");
     });
 
 $app->post("/add-news-post/",
     function (ServerRequestInterface $request, ResponseInterface $response) use ($add_news, $session) {
-
-        if ($session->getData("user")["Is_staff"] != 1) {
-            $session->setData("message", "Неавторизованные пользователи не могут добавлять новости!");
-            $session->setData("status", "danger");
-            return $response->withHeader("Location", "/")
-                ->withStatus(302);
-        }
         $params = (array)$request->getParsedBody(); // вернет все параметры, переданные через POST
         try {
             $add_news->add_news($params);
             $session->setData("message", "Новость успешно создана!");
             $session->setData("status", "success");
+            setcookie("add_news", "done", time() + 60 * 60, "/");
         } catch (AdditionNewsException $exception) {
             $session->setData("message", $exception->getMessage());
             $session->setData("status", "danger");
@@ -211,26 +230,19 @@ $app->post("/add-news-post/",
             return $response->withHeader("Location", "/add-news/")
                 ->withStatus(302);
         }
-        return $response->withHeader("Location", "/add-news/")
+        return $response->withHeader("Location", "/")
             ->withStatus(302);
     });
 
 $app->get("/login-consumer/",
     function (ServerRequestInterface $request, ResponseInterface $response) use ($twig, $session) {
-
-        $body = $twig->render("authorization/login-consumer.twig", [
-            "message" => $session->flush("message"),
-            "form" => $session->flush("form"),
-            "status" => $session->flush("status")
-
-        ]);
-        $response->getBody()->write($body);
-        return $response;
+        setcookie("add_news", "", -time() + 60, "/");
+        setcookie("add_organization", "", -time() + 60);
+        return renderPage($session, $twig, $response, "authorization/login-consumer.twig", "form");
     });
 
 $app->post("/login-consumer-post/",
     function (ServerRequestInterface $request, ResponseInterface $response) use ($authorization_consumer, $session) {
-
         $params = (array)$request->getParsedBody();
         try {
             $authorization_consumer->login($params['Consumer_phone_email'], $params['Consumer_password']);
@@ -247,7 +259,6 @@ $app->post("/login-consumer-post/",
 
 $app->get("/register-consumer/",
     function (ServerRequestInterface $request, ResponseInterface $response) use ($twig, $session, $database) {
-
         $query = $database->getConnection()->query(
             "SELECT Company_name from ManagementCompany"
         );
@@ -262,7 +273,6 @@ $app->get("/register-consumer/",
             "form" => $session->flush("form"),
             "mcs" => $session->flush("mcs"),
             "status" => $session->flush("status")
-
         ]);
         $response->getBody()->write($body);
         return $response;
@@ -290,20 +300,13 @@ $app->post("/register-consumer-post/",
 
 $app->get("/login-entity/",
     function (ServerRequestInterface $request, ResponseInterface $response) use ($twig, $session) {
-
-        $body = $twig->render("authorization/login-entity.twig", [
-            "message" => $session->flush("message"),
-            "form" => $session->flush("form"),
-            "status" => $session->flush("status")
-
-        ]);
-        $response->getBody()->write($body);
-        return $response;
+        setcookie("add_news", "", -time() + 60, "/");
+        setcookie("add_organization", "", -time() + 60);
+        return renderPage($session, $twig, $response, "authorization/login-entity.twig", "form");
     });
 
 $app->post("/login-entity-post/",
     function (ServerRequestInterface $request, ResponseInterface $response) use ($authorization_entity, $session) {
-
         $params = (array)$request->getParsedBody();
         try {
             $authorization_entity->login($params['Company_phone_email'], $params['Company_password']);
@@ -320,14 +323,7 @@ $app->post("/login-entity-post/",
 
 $app->get("/register-entity/",
     function (ServerRequestInterface $request, ResponseInterface $response) use ($twig, $session) {
-
-        $body = $twig->render("authorization/register-entity.twig", [
-            "message" => $session->flush("message"),
-            "form" => $session->flush("form"),
-            "status" => $session->flush("status")
-        ]);
-        $response->getBody()->write($body);
-        return $response;
+        return renderPage($session, $twig, $response, "authorization/register-entity.twig", "form");
     });
 
 $app->post("/register-entity-post/",
@@ -351,29 +347,20 @@ $app->post("/register-entity-post/",
 
 $app->get("/logout/",
     function (ServerRequestInterface $request, ResponseInterface $response) use ($session, $twig) {
-
-        $session->setData('user', null);
-
-        if (http_response_code() == 302) {
-            $body = $twig->render("index.twig", [
-                "message" => "Ваша сессия истекла!",
-                "status" => "dander"
-            ]);
-            $response->getBody()->write($body);
-            return $response;
-        }
-        return $response->withHeader("Location", "/")
-            ->withStatus(302);
+        $_SESSION = array();
+        setcookie("add_news", "", -time() + 60, "/");
+        setcookie("add_organization", "", -time() + 60);
+        header("Location: /");
+        exit;
+//        setcookie("add_organization", "", -time() + 60);
+//        $session->setData('user', null);
+//        return $response->withHeader("Location", "/")
+//            ->withStatus(302);
     });
 
 $app->get("/contacts/",
     function (ServerRequestInterface $request, ResponseInterface $response) use ($twig, $session) {
-
-        $body = $twig->render("info/contacts.twig", [
-            "user" => $session->getData("user")
-        ]);
-        $response->getBody()->write($body);
-        return $response;
+        return renderPage($session, $twig, $response, "info/contacts.twig", "some_form");
     });
 
 // тут запросы к нескольким таблицам!
@@ -387,14 +374,8 @@ $app->get("/view-consumer/{consumer_id}/",
                        INNER JOIN ManagementCompany MC on A.Management_company_id = MC.Management_company_id
                        WHERE C.Consumer_id = {$args["consumer_id"]}"
         );
-        $consumer_info = $query->fetch();
-        $body = $twig->render("info/consumer-info.twig", [
-            "user" => $session->getData("user"),
-            "consumer_info" => $consumer_info,
-
-        ]);
-        $response->getBody()->write($body);
-        return $response;
+        return renderPageByQuery($query, $session, $twig, $response,
+            "info/consumer-info.twig", "consumer_info", 1);
     });
 
 $app->get("/consumer-list/",
@@ -405,13 +386,8 @@ $app->get("/consumer-list/",
                        FROM Consumer 
                        ORDER BY Last_name, First_name LIMIT 4"
         );
-        $consumers = $query->fetchAll();
-        $body = $twig->render("info/consumer-list.twig", [
-            "user" => $session->getData("user"),
-            "consumers" => $consumers
-        ]);
-        $response->getBody()->write($body);
-        return $response;
+        return renderPageByQuery($query, $session, $twig, $response,
+            "info/consumer-list.twig", "consumers");
     });
 
 $app->get("/read-more-consumer/{consumer_id}/",
@@ -426,40 +402,33 @@ $app->get("/read-more-consumer/{consumer_id}/",
                        INNER JOIN Address A ON C.Address_id = A.Address_id 
                        WHERE C.Consumer_id = {$args["consumer_id"]}"
         );
-        $consumer_info = $query->fetch();
-        $body = $twig->render("info/read-more-consumer.twig", [
-            "user" => $session->getData("user"),
-            "consumer_info" => $consumer_info
-        ]);
-        $response->getBody()->write($body);
-        return $response;
+        return renderPageByQuery($query, $session, $twig, $response,
+            "info/read-more-consumer.twig", "consumer_info", 1);
     });
 
 $app->get("/add-organization/",
     function (ServerRequestInterface $request, ResponseInterface $response) use ($twig, $session) {
-        $body = $twig->render("addition/add-organization.twig", [
-            "user" => $session->getData("user"),
-            "message" => $session->flush("message"),
-            "form_org" => $session->flush("form_org"),
-            "status" => $session->flush("status")
-        ]);
-        $response->getBody()->write($body);
-        return $response;
+        if (!checkUserRights($session, $response, "Обычные пользователи не могут добавлять организации!")) {
+            return $response->withHeader("Location", "/")->withStatus(302);
+        }
+        if (isset($_COOKIE["add_organization"]) and $_COOKIE["add_organization"] == "done") {
+            $session->setData("message", "За одну сессию возможно только одно добавление организации!");
+            $session->setData("status", "warning");
+            return $response->withHeader("Location", "/organization-list/")
+                ->withStatus(302);
+        }
+        return renderPage($session, $twig, $response,
+            "addition/add-organization.twig", "form_org");
     });
 
 $app->post("/add-organization-post/",
-    function (ServerRequestInterface $request, ResponseInterface $response) use ($add_organization, $session){
-        if ($session->getData("user")["Is_staff"] != 1) {
-            $session->setData("message", "Неавторизованные пользователи не могут добавлять организации!");
-            $session->setData("status", "danger");
-            return $response->withHeader("Location", "/")
-                ->withStatus(302);
-        }
+    function (ServerRequestInterface $request, ResponseInterface $response) use ($add_organization, $session) {
         $params = (array)$request->getParsedBody(); // вернет все параметры, переданные через POST
         try {
             $add_organization->add_organization($params);
             $session->setData("message", "Организация успешно создана!");
             $session->setData("status", "success");
+            setcookie("add_organization", "done", time() + 60 * 60, "/");
         } catch (AdditionOrganizationException $exception) {
             $session->setData("message", $exception->getMessage());
             $session->setData("status", "danger");
@@ -467,9 +436,9 @@ $app->post("/add-organization-post/",
             return $response->withHeader("Location", "/add-organization/")
                 ->withStatus(302);
         }
-        return $response->withHeader("Location", "/add-organization/")
+        return $response->withHeader("Location", "/organization-list/")
             ->withStatus(302);
-});
+    });
 
 $app->get("/organization-list/",
     function (ServerRequestInterface $request, ResponseInterface $response) use ($database, $session, $twig) {
@@ -479,15 +448,8 @@ $app->get("/organization-list/",
                        FROM ResourceOrganization
                        ORDER BY Organization_name"
         );
-        $organizations = $query->fetchAll();
-        $body = $twig->render("info/organization-list.twig", [
-            "user" => $session->getData("user"),
-            "organizations" => $organizations,
-            "message" => $session->flush("message"),
-            "status" => $session->flush("status")
-        ]);
-        $response->getBody()->write($body);
-        return $response;
+        return renderPageByQuery($query, $session, $twig, $response,
+            "info/organization-list.twig", "organizations");
     });
 
 $app->get("/view-organization/{organization_id}/",
@@ -498,36 +460,23 @@ $app->get("/view-organization/{organization_id}/",
                        FROM ResourceOrganization
                        WHERE Resource_organization_id = {$args["organization_id"]}"
         );
-        $organization = $query->fetch();
-        $session->setData("form_org", $organization);
-        $body = $twig->render("info/view-organization.twig", [
-            "user" => $session->getData("user"),
-            "message" => $session->flush("message"),
-            "status" => $session->flush("status"),
-            "form_org" => $session->flush("form_org")
-        ]);
-        $response->getBody()->write($body);
-        return $response;
+        return renderPageByQuery($query, $session, $twig, $response,
+            "info/view-organization.twig", "form_org", 1);
     });
 
 $app->get("/edit-organization/{organization_id}/",
     function (ServerRequestInterface $request, ResponseInterface $response, $args) use ($database, $session, $twig) {
+        if (!checkUserRights($session, $response, "Обычные пользователи не могут обновлять информацию об организации!")) {
+            return $response->withHeader("Location", "/")->withStatus(302);
+        }
         $query = $database->getConnection()->query(
             "SELECT Resource_organization_id, Organization_name, Telephone_number, Organization_email, 
                               Organization_link, Bank_details, Address 
                        FROM ResourceOrganization
                        WHERE Resource_organization_id = {$args["organization_id"]}"
         );
-        $organization = $query->fetch();
-        $session->setData("form_org", $organization);
-        $body = $twig->render("addition/edit-organization.twig", [
-            "user" => $session->getData("user"),
-            "message" => $session->flush("message"),
-            "form_org" => $session->flush("form_org"),
-            "status" => $session->flush("status"),
-        ]);
-        $response->getBody()->write($body);
-        return $response;
+        return renderPageByQuery($query, $session, $twig, $response,
+            "addition/edit-organization.twig", "form_org", 1);
     });
 
 $app->post("/edit-organization-post/{organization_id}/",
@@ -550,6 +499,9 @@ $app->post("/edit-organization-post/{organization_id}/",
 
 $app->get("/delete-organization/{organization_id}/",
     function (ServerRequestInterface $request, ResponseInterface $response, $args) use ($database, $session) {
+        if (!checkUserRights($session, $response, "Обычные пользователи не могут удалять информацию об организации!")) {
+            return $response->withHeader("Location", "/")->withStatus(302);
+        }
         $required_organization_id = $args["organization_id"];
         $database->getConnection()->query(
             "DELETE FROM ResourceOrganization WHERE Resource_organization_id = $required_organization_id"

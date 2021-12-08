@@ -7,7 +7,7 @@
 {% block content %}
     <h1>Редактирование {{ form_news.Title }}</h1>
     {% include 'parts/_message.twig' %}
-    <form method="post" action="/edit-news-post/{{ news_id }}/">
+    <form method="post" action="/edit-news-post/{{ form_news.News_id }}/">
         <div class="mb-3">
             <label for="Title" class="form-label">Название новости</label>
             <input type="text" name="Title" class="form-control" id="Title" value="{{ form_news ? form_news.Title }}">

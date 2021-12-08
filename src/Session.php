@@ -36,6 +36,4 @@ class Session
     private function unset(string $key): void{
         unset($_SESSION[$key]);
     }
-
-
 }
