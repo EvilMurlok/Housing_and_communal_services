@@ -1,0 +1,75 @@
+{% extends 'parts/base.twig' %}
+
+{% block title %}
+    Список тарифов
+{% endblock %}
+
+{% block ajax %}
+    <script src="../../static/js/jquery-3.6.0.min.js"></script>
+    <script type="text/javascript">
+        $(document).ready(function () {
+            let num = 4;
+            let inProcess = false;
+            // это будет запускаться тогда, когда страница будет прокручиваться
+            $(window).scroll(function () {
+                if ($(window).scrollTop() + $(window).height() >= $(document).height() && !inProcess) {
+                    $.ajax({
+                        url: "../../src/additionRate/load.php",
+                        method: "GET",
+                        data: {"num": num},
+                        beforeSend: function () {
+                            inProcess = true;
+                        }
+                    }).done(function (data) {
+                        data = jQuery.parseJSON(data)
+                        if (data.length > 0) {
+                            $.each(data, function (index, data) {
+                                $("#rate-list").append(
+                                    "<div class=\"card mb-3\"><div class=\"card-body\">" +
+                                    "<h5 class=\"card-title\">" + data.Service_name +"</h5>" +
+                                    "<p class=\"card-text\"> <b>Тариф:</b> " + data.Unit_cost + " " + data.Unit +
+                                    "<br> <b>Ресурсоснабжающая организация:</b> " + data.Organization_name + "<br>" +
+                                    "<b>Телефон организации:</b> " + data.Telephone_number + "<br>" +
+                                    "<b>Email организации:</b> " + data.Organization_email + "</p></div>" +
+                                    "<div class=\"card-footer text-muted\">" +
+                                    "<a href=\"/view-organization/" + data.Resource_organization_id + "/\" " +
+                                    "class=\"btn btn-success\">Узнать больше об организации</a></div></div>"
+                                )
+                            });
+                            inProcess = false;
+                            num += 4;
+                        }
+                    });
+                }
+            })
+        })
+    </script>
+{% endblock %}
+
+
+{% block content %}
+    <h2 class="mb-3">Список тарифов</h2>
+    {% include 'parts/_message.twig' %}
+    <div id="rate-list">
+        {% for rate in rates %}
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">{{ rate.Service_name }}</h5>
+                    <p class="card-text">
+                        <b>Тариф:</b> {{ rate.Unit_cost }} {{ rate.Unit }}
+                        <br>
+                        <b>Ресурсоснабжающая организация:</b> {{ rate.Organization_name }}
+                        <br>
+                        <b>Телефон организации: </b> {{ rate.Telephone_number }}
+                        <br>
+                        <b>Email оганизации: </b> {{ rate.Organization_email }}
+                    </p>
+                </div>
+                <div class="card-footer text-muted">
+                    <a href="/view-organization/{{ rate.Resource_organization_id }}/"
+                       class="btn btn-success">Узнать больше об организации</a>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{%  endblock %}

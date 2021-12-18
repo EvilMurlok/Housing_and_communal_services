@@ -51,18 +51,11 @@ $sessionMiddleware = function (ServerRequestInterface $request, RequestHandlerIn
     if (!isset($_SESSION['last_visit'])) {
         $_SESSION['last_visit'] = time();
     }
-    if (isset($_SESSION['user']) && (time() - $_SESSION['last_visit']) > $session_timeout) {
-        $_SESSION = array();
-        setcookie("add_news", "", -time() + 60, "/");
-        setcookie("add_organization", "", -time() + 60);
-        header("Location: /logout/");
-        exit;
-    }
     $_SESSION['last_visit'] = time();
     $response = $handler->handle($request);
     $session->save();
-    var_dump($_SESSION);
-    var_dump($_COOKIE);
+//    var_dump($_SESSION);
+//    var_dump($_COOKIE);
     return $response;
 };
 
@@ -145,6 +138,21 @@ $app->get("/",
             "index.twig", "form_news");
     });
 
+$app->get("/rates/",
+    function (ServerRequestInterface $request, ResponseInterface $response) use ($twig, $session, $database) {
+        $query = $database->getConnection()->query(
+            "SELECT r.Resource_organization_id, r.Service_name, r.Unit, 
+                              r.Unit_cost, o.Organization_name, 
+                              o.Telephone_number, o.Organization_email
+                       FROM Rate r
+                       INNER JOIN ResourceOrganization o using (Resource_organization_id)
+                       ORDER BY r.Service_name
+                       LIMIT 4"
+        );
+        return renderPageByQuery($query, $session, $twig, $response,
+            "info/rates-info.twig", "rates");
+    });
+
 $app->get("/view-news/{news_id}/",
     function (ServerRequestInterface $request, ResponseInterface $response, $args) use ($database, $session, $twig) {
         $query = $database->getConnection()->query(
@@ -206,12 +214,6 @@ $app->get("/add-news/",
         if (!checkUserRights($session, $response, "Обычные пользователи не могут добавлять новости")) {
             return $response->withHeader("Location", "/")->withStatus(302);
         }
-        if (isset($_COOKIE["add_news"]) and $_COOKIE["add_news"] == "done") {
-            $session->setData("message", "За одну сессию возможно только одно добавление новости!");
-            $session->setData("status", "warning");
-            return $response->withHeader("Location", "/")
-                ->withStatus(302);
-        }
         return renderPage($session, $twig, $response, "addition/add-news.twig", "form_news");
     });
 
@@ -222,7 +224,6 @@ $app->post("/add-news-post/",
             $add_news->add_news($params);
             $session->setData("message", "Новость успешно создана!");
             $session->setData("status", "success");
-            setcookie("add_news", "done", time() + 60 * 60, "/");
         } catch (AdditionNewsException $exception) {
             $session->setData("message", $exception->getMessage());
             $session->setData("status", "danger");
@@ -236,8 +237,6 @@ $app->post("/add-news-post/",
 
 $app->get("/login-consumer/",
     function (ServerRequestInterface $request, ResponseInterface $response) use ($twig, $session) {
-        setcookie("add_news", "", -time() + 60, "/");
-        setcookie("add_organization", "", -time() + 60);
         return renderPage($session, $twig, $response, "authorization/login-consumer.twig", "form");
     });
 
@@ -300,8 +299,6 @@ $app->post("/register-consumer-post/",
 
 $app->get("/login-entity/",
     function (ServerRequestInterface $request, ResponseInterface $response) use ($twig, $session) {
-        setcookie("add_news", "", -time() + 60, "/");
-        setcookie("add_organization", "", -time() + 60);
         return renderPage($session, $twig, $response, "authorization/login-entity.twig", "form");
     });
 
@@ -348,14 +345,8 @@ $app->post("/register-entity-post/",
 $app->get("/logout/",
     function (ServerRequestInterface $request, ResponseInterface $response) use ($session, $twig) {
         $_SESSION = array();
-        setcookie("add_news", "", -time() + 60, "/");
-        setcookie("add_organization", "", -time() + 60);
         header("Location: /");
         exit;
-//        setcookie("add_organization", "", -time() + 60);
-//        $session->setData('user', null);
-//        return $response->withHeader("Location", "/")
-//            ->withStatus(302);
     });
 
 $app->get("/contacts/",
@@ -409,13 +400,7 @@ $app->get("/read-more-consumer/{consumer_id}/",
 $app->get("/add-organization/",
     function (ServerRequestInterface $request, ResponseInterface $response) use ($twig, $session) {
         if (!checkUserRights($session, $response, "Обычные пользователи не могут добавлять организации!")) {
-            return $response->withHeader("Location", "/")->withStatus(302);
-        }
-        if (isset($_COOKIE["add_organization"]) and $_COOKIE["add_organization"] == "done") {
-            $session->setData("message", "За одну сессию возможно только одно добавление организации!");
-            $session->setData("status", "warning");
-            return $response->withHeader("Location", "/organization-list/")
-                ->withStatus(302);
+            return $response->withHeader("Location", "/organization-list/")->withStatus(302);
         }
         return renderPage($session, $twig, $response,
             "addition/add-organization.twig", "form_org");
@@ -428,7 +413,6 @@ $app->post("/add-organization-post/",
             $add_organization->add_organization($params);
             $session->setData("message", "Организация успешно создана!");
             $session->setData("status", "success");
-            setcookie("add_organization", "done", time() + 60 * 60, "/");
         } catch (AdditionOrganizationException $exception) {
             $session->setData("message", $exception->getMessage());
             $session->setData("status", "danger");
@@ -467,7 +451,7 @@ $app->get("/view-organization/{organization_id}/",
 $app->get("/edit-organization/{organization_id}/",
     function (ServerRequestInterface $request, ResponseInterface $response, $args) use ($database, $session, $twig) {
         if (!checkUserRights($session, $response, "Обычные пользователи не могут обновлять информацию об организации!")) {
-            return $response->withHeader("Location", "/")->withStatus(302);
+            return $response->withHeader("Location", "/organization-list/")->withStatus(302);
         }
         $query = $database->getConnection()->query(
             "SELECT Resource_organization_id, Organization_name, Telephone_number, Organization_email, 
@@ -500,7 +484,7 @@ $app->post("/edit-organization-post/{organization_id}/",
 $app->get("/delete-organization/{organization_id}/",
     function (ServerRequestInterface $request, ResponseInterface $response, $args) use ($database, $session) {
         if (!checkUserRights($session, $response, "Обычные пользователи не могут удалять информацию об организации!")) {
-            return $response->withHeader("Location", "/")->withStatus(302);
+            return $response->withHeader("Location", "/organization-list/")->withStatus(302);
         }
         $required_organization_id = $args["organization_id"];
         $database->getConnection()->query(
