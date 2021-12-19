@@ -39,10 +39,8 @@
                 <b>Метраж квартиры:</b> {{ consumer_info.Living_space }}
             </p>
             <p>
-                <b>Адрес проживания:</b>ß
-                <span>
-                    г. {{ consumer_info.City_name }}, ул. {{ consumer_info.Street }}, д. {{ consumer_info.House }}
-                </span>
+                <b>Адрес проживания:</b>
+                <span>г. {{ consumer_info.City_name }}, ул. {{ consumer_info.Street }}, д. {{ consumer_info.House }}</span>
                 {% if consumer_info.Housing != 0 %}
                     <span>, корп. {{ consumer_info.Housing }}</span>
                 {% endif %}

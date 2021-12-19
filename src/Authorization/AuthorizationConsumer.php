@@ -220,7 +220,7 @@ class AuthorizationConsumer{
     /**
      * @throws AuthorizationConsumerException
      */
-    public function login(string $email_or_phone, string $password): bool{
+    public function login(string $email_or_phone, string $password, string $remember_me): bool{
         if (empty($email_or_phone)){
             throw new AuthorizationConsumerException("Email или телефон пользователя не может быть пустым!");
         }
@@ -261,29 +261,50 @@ class AuthorizationConsumer{
             }
         }
 
-        if (password_verify($password, $consumer["Consumer_password"])){
-            $this->session->setData(
-                "user", [
-                "Consumer_id" => $consumer["Consumer_id"],
-                "First_name" => $consumer["First_name"],
-                "Last_name" => $consumer["Last_name"],
-                "Patronymic" => $consumer["Patronymic"],
-                "Consumer_email" => $consumer["Consumer_email"],
-                "Birthday" => $consumer["Birthday"],
-                "Telephone_number" => $consumer["Telephone_number"],
-                "Passport_series" => $consumer["Passport_series"],
-                "Passport_number" => $consumer["Passport_number"],
-                "Personal_acc_hcs" => $consumer["Personal_acc_hcs"],
-                "Personal_acc_landline_ph" => $consumer["Personal_acc_landline_ph"],
-                "Personal_acc_long_dist_ph" => $consumer["Personal_acc_long_dist_ph"],
-                "Address_id" => $consumer["Address_id"],
-                "Flat" => $consumer["Flat"],
-                "Living_space" => $consumer["Living_space"],
-                "Is_staff" => $consumer["Is_staff"]
-            ]);
-            return True;
+        if (!password_verify($password, $consumer["Consumer_password"])){
+            throw new AuthorizationConsumerException("Неверный email или пароль!");
         }
 
-        throw new AuthorizationConsumerException("Неверный email или пароль!");
+        if ($remember_me == "on"){
+            $password_cookie_token = md5($password);
+            if (str_contains($email_or_phone, "@")){
+                $this->database->getConnection()->query(
+                    "UPDATE Consumer SET Password_cookie_token='".$password_cookie_token."' 
+                               WHERE Consumer_email='".$email_or_phone."'");
+            }
+            else{
+                $this->database->getConnection()->query(
+                    "UPDATE Consumer SET Password_cookie_token='".$password_cookie_token."' 
+                               WHERE Telephone_number='".$email_or_phone."'");
+            }
+            setcookie("password_cookie_token", $password_cookie_token, time() + 1000 * 60 * 60 * 24 * 30, "/");
+            file_put_contents("logs.txt", $_COOKIE["password_cookie_token"]);
+        }
+        else{
+           // file_put_contents("logs.txt", $_COOKIE["password_cookie_token"]);
+            if(isset($_COOKIE["password_cookie_token"])){
+                if (str_contains($email_or_phone, "@")){
+                    $this->database->getConnection()->query(
+                        "UPDATE Consumer SET Password_cookie_token='' 
+                               WHERE Consumer_email='".$email_or_phone."'");
+                }
+                else{
+                    $this->database->getConnection()->query(
+                        "UPDATE Consumer SET Password_cookie_token='' 
+                               WHERE Telephone_number='".$email_or_phone."'");
+                }
+                setcookie("password_cookie_token", "", time() - 3600, "/");
+            }
+        }
+        $this->session->setData(
+            "user", [
+            "Consumer_id" => $consumer["Consumer_id"],
+            "First_name" => $consumer["First_name"],
+            "Last_name" => $consumer["Last_name"],
+            "Consumer_email" => $consumer["Consumer_email"],
+            "Telephone_number" => $consumer["Telephone_number"],
+            "Is_staff" => $consumer["Is_staff"]
+        ]);
+        return True;
     }
 }

@@ -37,7 +37,11 @@ require_once "/Users/macbookair/Desktop/Housing_and_communal_services/src/additi
 require_once "/Users/macbookair/Desktop/Housing_and_communal_services/src/additionOrganization/AdditionOrganization.php";
 require_once "/Users/macbookair/Desktop/Housing_and_communal_services/src/additionOrganization/EditionOrganization.php";
 require_once "/Users/macbookair/Desktop/Housing_and_communal_services/src/additionOrganization/AdditionOrganizationException.php";
-
+$config = include_once "/Users/macbookair/Desktop/Housing_and_communal_services/config/databaseInfo.php";
+$dsn = $config["dsn"];
+$username = $config["username"];
+$password = $config["password"];
+$database = new Database($dsn, $username, $password);
 
 $loader = new FilesystemLoader("templates");
 $twig = new Environment($loader);
@@ -45,17 +49,49 @@ $twig = new Environment($loader);
 $session = new Session();
 // будет отрабатываться для каждого запроса get или post, определенного снизу
 // и где бы мы ни захотели воспользоваться сессией, она уже будет создана
-$sessionMiddleware = function (ServerRequestInterface $request, RequestHandlerInterface $handler) use ($session) {
+$sessionMiddleware = function (ServerRequestInterface $request, RequestHandlerInterface $handler) use ($session, $database) {
     $session->start();
-    $session_timeout = 120; // in seconds
+    if(isset($_COOKIE["password_cookie_token"]) && !empty($_COOKIE["password_cookie_token"])){
+        var_dump(
+            "WE ARE HERE!"
+        );
+        $query = $database->getConnection()->query(
+            "SELECT *
+                           FROM Consumer
+                           WHERE Password_cookie_token = '".$_COOKIE["password_cookie_token"]."'");
+        $select_user_data = $query->fetch();
+        if(!$select_user_data){
+            var_dump("SOMETHING WENT WRONG!");
+        }else{
+            $session->setData(
+                "user", [
+                "Consumer_id" => $select_user_data["Consumer_id"],
+                "First_name" => $select_user_data["First_name"],
+                "Last_name" => $select_user_data["Last_name"],
+                "Consumer_email" => $select_user_data["Consumer_email"],
+                "Telephone_number" => $select_user_data["Telephone_number"],
+                "Is_staff" => $select_user_data["Is_staff"]
+            ]);
+        }
+    }
+    $session_timeout = 60; // in seconds
     if (!isset($_SESSION['last_visit'])) {
         $_SESSION['last_visit'] = time();
+    }
+    if((!isset($_COOKIE["password_cookie_token"]) || empty($_COOKIE["password_cookie_token"]))
+        && isset($_SESSION['user'])
+        && ((time() - $_SESSION['last_visit']) > $session_timeout))
+    {
+        unset($_SESSION['last_visit']);
+        unset($_SESSION);
+        header("Location: /logout/");
+        exit;
     }
     $_SESSION['last_visit'] = time();
     $response = $handler->handle($request);
     $session->save();
-//    var_dump($_SESSION);
-//    var_dump($_COOKIE);
+    var_dump($_SESSION);
+    var_dump($_COOKIE);
     return $response;
 };
 
@@ -64,12 +100,6 @@ $app->addErrorMiddleware(true, true, true);
 $app->addBodyParsingMiddleware(); // $_POST
 $app->add($sessionMiddleware);
 
-
-$config = include_once "/Users/macbookair/Desktop/Housing_and_communal_services/config/databaseInfo.php";
-$dsn = $config["dsn"];
-$username = $config["username"];
-$password = $config["password"];
-$database = new Database($dsn, $username, $password);
 
 // authorization block
 $authorization_entity = new AuthorizationEntity($database, $session);
@@ -236,19 +266,23 @@ $app->post("/add-news-post/",
     });
 
 $app->get("/login-consumer/",
-    function (ServerRequestInterface $request, ResponseInterface $response) use ($twig, $session) {
-        return renderPage($session, $twig, $response, "authorization/login-consumer.twig", "form");
+    function (ServerRequestInterface $request, ResponseInterface $response) use ($twig, $database, $session) {
+        return renderPage($session, $twig, $response, "authorization/login-consumer.twig");
     });
 
 $app->post("/login-consumer-post/",
     function (ServerRequestInterface $request, ResponseInterface $response) use ($authorization_consumer, $session) {
         $params = (array)$request->getParsedBody();
+        $remember_me = "off";
+        if (isset($params["Remember_me"])){
+            $remember_me = "on";
+        }
         try {
-            $authorization_consumer->login($params['Consumer_phone_email'], $params['Consumer_password']);
+            $authorization_consumer->login($params['Consumer_phone_email'], $params['Consumer_password'], $remember_me);
         } catch (AuthorizationConsumerException $exception) {
             $session->setData("message", $exception->getMessage());
             $session->setData("status", "danger");
-            $session->setData("form", $params);
+            $session->setData("form", $params['Consumer_phone_email']);
             return $response->withHeader("Location", "/login-consumer/")
                 ->withStatus(302);
         }
@@ -343,7 +377,15 @@ $app->post("/register-entity-post/",
     });
 
 $app->get("/logout/",
-    function (ServerRequestInterface $request, ResponseInterface $response) use ($session, $twig) {
+    function (ServerRequestInterface $request, ResponseInterface $response) use ($session, $twig, $database) {
+        if(isset($_COOKIE["password_cookie_token"]) && !empty($_COOKIE["password_cookie_token"])){
+            $database->getConnection()->query(
+                "UPDATE Consumer 
+                           SET password_cookie_token = '' 
+                           WHERE Consumer_email = '".$_SESSION["user"]["Consumer_email"]."'"
+            );
+            setcookie("password_cookie_token", "", -time() + 60, "/");
+        }
         $_SESSION = array();
         header("Location: /");
         exit;
@@ -358,7 +400,9 @@ $app->get("/contacts/",
 $app->get("/view-consumer/{consumer_id}/",
     function (ServerRequestInterface $request, ResponseInterface $response, $args) use ($database, $twig, $session) {
         $query = $database->getConnection()->query(
-            "SELECT A.City_name, A.Street, A.House, A.Housing, MC.Company_name, MC.Address, MC.Full_name_boss,
+            "SELECT C.First_name, C.Last_name, C.Patronymic, C.Birthday, C.Telephone_number, C.Consumer_email,
+                              C.Passport_series, C.Passport_number, C.Flat, 
+                              A.City_name, A.Street, A.House, A.Housing, MC.Company_name, MC.Address, MC.Full_name_boss,
                               MC.Company_email, MC.Telephone_number
                        FROM Consumer AS C 
                        INNER JOIN Address A ON C.Address_id = A.Address_id 

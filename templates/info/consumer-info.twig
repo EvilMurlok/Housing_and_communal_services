@@ -11,13 +11,13 @@
         <tr>
             <td>ФИО:</td>
             <td>
-                <span>{{ user.First_name }} {{ user.Last_name }} {{ user.Patronymic }}</span>
+                <span>{{ user.First_name }} {{ user.Last_name }} {{ consumer_info.Patronymic }}</span>
             </td>
         </tr>
         <tr>
             <td>Дата рождения:</td>
             <td>
-                <span>{{ user.Birthday }}</span>
+                <span>{{ consumer_info.Birthday }}</span>
             </td>
         </tr>
         <tr>
@@ -35,17 +35,17 @@
         <tr>
             <td>Серия и номер паспорта:</td>
             <td>
-                <span>{{ user.Passport_series }} {{ user.Passport_number }}</span>
+                <span>{{ consumer_info.Passport_series }} {{ consumer_info.Passport_number }}</span>
             </td>
         </tr>
         <tr>
             <td>Адрес проживания:</td>
             <td>
-                <span>г. {{ consumer_info.City_name }}, ул. {{ consumer_info.Street }}, д. {{ consumer_info.House }}</span>
+                <span> г. {{ consumer_info.City_name }}, ул. {{ consumer_info.Street }}, д. {{ consumer_info.House }}</span>
                 {% if consumer_info.Housing != 0 %}
                     <span>, корп. {{ consumer_info.Housing }}</span>
                 {% endif %}
-                <span>, кв. {{ user.Flat }}.</span>
+                <span>, кв. {{ consumer_info.Flat }}.</span>
             </td>
         </tr>
         </tbody>

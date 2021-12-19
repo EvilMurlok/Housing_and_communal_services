@@ -15,8 +15,8 @@
         </div>
         {% if user is not null and user.Is_staff == 1 %}
             <div class="d-flex justify-content-evenly mt-3 mb-3">
-                <a href="/edit-news/{{ form_news.News_id }}/" class="btn btn-success">Редактировать</a>
-                <a href="/delete-news/{{ form_news.News_id }}/" class="btn btn-danger">Удалить новость</a>
+                <a href="/edit-news/{{ form_news.News_id }}/" class="btn">Редактировать</a>
+                <a href="/delete-news/{{ form_news.News_id }}/" class="btn btn-delete">Удалить новость</a>
             </div>
         {% endif %}
     </div>

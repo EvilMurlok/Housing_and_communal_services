@@ -116,6 +116,35 @@ header {
     text-align: center;
 }
 
+.form-check-input:checked{
+    background-color: var(--color2);
+    border-color: var(--color2);
+}
+
+.btn{
+    background-color: var(--color2);
+    border-color: var(--color2);
+    color: #fff;
+}
+
+.btn:hover{
+    background-color: var(--color1);
+    border-color: var(--color1);
+    color: #fff;
+}
+
+.btn-delete{
+    color: #fff;
+    background-color: #cd2d1f;
+    border-color: #cd2d1f;
+}
+
+.btn-delete:hover{
+    color: #fff;
+    background-color: #ff1500;
+    border-color: #ff1500;
+}
+
 footer {
     background-color: var(--color1);
     padding: 20px 0 20px 0;

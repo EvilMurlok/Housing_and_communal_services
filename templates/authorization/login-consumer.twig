@@ -10,14 +10,19 @@
     <form method="post" action="/login-consumer-post/">
         <div class="mb-3">
             <label for="Consumer_phone_email" class="form-label">Телефон или Email</label>
-            <input type="text" name="Consumer_phone_email" class="form-control" id="Consumer_phone_email" aria-describedby="phoneEmailHelp" value="{{ form ? form.Company_phone_email }}">
+            <input type="text" name="Consumer_phone_email" class="form-control" id="Consumer_phone_email" aria-describedby="phoneEmailHelp" value="{{ form ? form }}">
             <div id="phoneEmailHelp" class="form-text">Формат: 89997776655 или user@domain.ru(com)</div>
         </div>
         <div class="mb-3">
             <label for="Consumer_password" class="form-label">Пароль</label>
             <input type="password" name="Consumer_password" class="form-control" id="Consumer_password">
         </div>
-
-        <button type="submit" class="btn btn-success">Войти</button>
+        <div class="form-check mb-3">
+            <input class="form-check-input" name="Remember_me" type="checkbox" id="Remember_me" checked>
+            <label class="form-check-label" for="Remember_me">
+                Оставаться в системе
+            </label>
+        </div>
+        <button type="submit" class="btn">Войти</button>
     </form>
 {% endblock %}

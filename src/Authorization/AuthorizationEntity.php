@@ -147,11 +147,8 @@ class AuthorizationEntity {
                 "user", [
                     "Management_company_id" => $management_company["Management_company_id"],
                     "Company_name" => $management_company["Company_name"],
-                    "Full_name_boss" => $management_company["Full_name_boss"],
                     "Company_email" => $management_company["Company_email"],
-                    "Company_link" => $management_company["Company_link"],
                     "Telephone_number" => $management_company["Telephone_number"],
-                    "Address" => $management_company["Address"],
                     "Is_staff" => $management_company["Is_staff"]
             ]);
             return True;

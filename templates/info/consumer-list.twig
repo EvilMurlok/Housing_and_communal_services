@@ -30,7 +30,7 @@
                                     "<p class=\"card-text\"> <b>Дата рождения:</b> " + data.Birthday + "<br><b>Email:</b> " + data.Consumer_email +
                                     "<br><b>Телефон:</b> " + data.Telephone_number + "</p></div>" +
                                     "<div class=\"card-footer text-muted\">" +
-                                    "<a href=\"/read-more-consumer/" + data.Consumer_id + "/\" class=\"btn btn-success\">Узнать больше</a></div></div>"
+                                    "<a href=\"/read-more-consumer/" + data.Consumer_id + "/\" class=\"btn\">Узнать больше</a></div></div>"
                                 )
                             });
                             inProcess = false;
@@ -61,7 +61,7 @@
                     </p>
                 </div>
                 <div class="card-footer text-muted">
-                    <a href="/read-more-consumer/{{ consumer.Consumer_id }}/" class="btn btn-success">Узнать больше</a>
+                    <a href="/read-more-consumer/{{ consumer.Consumer_id }}/" class="btn">Узнать больше</a>
                 </div>
             </div>
         {% endfor %}

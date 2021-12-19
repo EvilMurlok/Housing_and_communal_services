@@ -16,10 +16,12 @@
             <label for="Content" class="form-label">Содержимое новости</label>
             <input type="text" name="Content" class="form-control" id="Content" value="{{ form_news.Content }}">
         </div>
-        <div class="mb-3 form-check">
-            <input type="checkbox" class="form-check-input" id="Is_published" name="Is_published" value="on">
-            <label class="form-check-label" for="Is_published">Опубликовано</label>
+        <div class="form-check mb-3">
+            <input class="form-check-input" type="checkbox" value="" id="Is_published" checked>
+            <label class="form-check-label" for="Is_published">
+                Опубликовано
+            </label>
         </div>
-        <button type="submit" class="btn btn-success">Изменить новость</button>
+        <button type="submit" class="btn">Изменить новость</button>
     </form>
 {% endblock %}

@@ -28,8 +28,8 @@
         </div>
         {% if user.Is_staff == 1 %}
             <div class="d-flex justify-content-evenly mt-3 mb-3">
-                <a href="/edit-organization/{{ form_org.Resource_organization_id }}/" class="btn btn-success">Редактировать</a>
-                <a href="/delete-organization/{{ form_org.Resource_organization_id }}/" class="btn btn-danger">Удалить организацию</a>
+                <a href="/edit-organization/{{ form_org.Resource_organization_id }}/" class="btn">Редактировать</a>
+                <a href="/delete-organization/{{ form_org.Resource_organization_id }}/" class="btn btn-delete">Удалить организацию</a>
             </div>
         {% endif %}
     </div>
