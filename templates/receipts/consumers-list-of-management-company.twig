@@ -1,0 +1,39 @@
+{% extends 'parts/base.twig' %}
+
+{% block title %}
+    Список Ваших пользователей
+{% endblock %}
+
+{% block content %}
+    <h2 class="mb-3">Список пользователей Управляющей компании: {{ user.Company_name }}</h2>
+    {% include 'parts/_message.twig' %}
+    <div id="consumer-list">
+        {% for consumer in consumers %}
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">{{ consumer.Last_name }} {{ consumer.First_name }} {{ consumer.Patronymic }}</h5>
+                    <p class="card-text">
+                        <b>Дата рождения:</b> {{ consumer.Birthday }}
+                        <br>
+                        <b>Email:</b> {{ consumer.Consumer_email }}
+                        <br>
+                        <b>Телефон:</b> {{ consumer.Telephone_number }}
+                    </p>
+                </div>
+                <div class="card-footer text-muted d-flex justify-content-between">
+                    <a href="/read-more-consumer/{{ consumer.Consumer_id }}/" class="btn">Узнать больше</a>
+                    <a class="dropdown">
+                        <a class="btn-header dropdown-toggle btn" id="Add_Receipt"
+                           data-bs-toggle="dropdown" aria-expanded="false">Добавить квитанцию</a>
+                        <ul class="dropdown-menu" aria-labelledby="Add_Receipt">
+                            <li><a class="dropdown-item" href="/add-common-receipt/{{ consumer.Consumer_id }}/">Общая квитанция ЖКУ</a></li>
+                            <li><a class="dropdown-item" href="/add-phone-receipt/{{ consumer.Consumer_id }}/">Квитация за телефон</a></li>
+                        </ul>
+                    </a>
+                    <a href="#" class="btn">Оплаченные квитанции</a>
+                    <a href="#" class="btn">Неоплаченные квитанции</a>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{%  endblock %}

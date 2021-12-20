@@ -4,9 +4,9 @@ namespace App;
 
 use JetBrains\PhpStorm\Pure;
 
-require_once "/Users/macbookair/Desktop/Housing_and_communal_services/src/readings/ValidationData.php";
+require_once "/Users/macbookair/Desktop/Housing_and_communal_services/src/readings/ValidationReadingData.php";
 
-class TakingReading extends ValidationData {
+class TakingReading extends ValidationReadingData {
     private array $month_to_number = [
         "Январь" => "01",
         "Февраль" => "02",

@@ -2,7 +2,7 @@
 
 namespace App;
 
-class ValidationData{
+class ValidationReadingData{
     protected Database $database;
     protected Session $session;
 
@@ -40,9 +40,8 @@ class ValidationData{
         if ($statement->rowCount() > 0){
             throw new TakingReadingException("Показание за услугу: '".
                 $data["Reading_type"] ."', за период: ".
-                $period_of_reading ." уже существует!");
+                $data["Reading_month"] . " " . $data["Reading_year"] . " уже существует!");
         }
-
         return $data;
     }
 }

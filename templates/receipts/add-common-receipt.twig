@@ -1,0 +1,39 @@
+{% extends 'parts/base.twig' %}
+
+{% block title %}
+    Добавление квитанции
+{% endblock %}
+
+{% block content %}
+    <h1 class="mb-0">Добавление основной квитанции для пользователя</h1>
+    <h2 class="mb-5">
+        {{ consumer_info.First_name }} {{ consumer_info.Last_name }} ({{ consumer_info.Consumer_email }})
+    </h2>
+
+    {% include 'parts/_message.twig' %}
+    <form method="post" action="/add-common-receipt-post/{{ consumer_info.Consumer_id }}/">
+        <h5 class="mb-2 text-center">Период, за который составляется квитанция</h5>
+        <div class="d-flex justify-content-evenly text-center">
+            <div>
+                <p class="mb-0">Месяц</p>
+                <select class="form-select mb-3" name="Receipt_month" aria-label="Receipt_month">
+                    {% for month in months %}
+                        <option value="{{ month }}">{{ month }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <p class="mb-0">Год</p>
+                <select class="form-select mb-3" name="Receipt_year" aria-label="Receipt_year">
+                    {% for year in years %}
+                        <option value="{{ year }}">{{ year }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+        </div>
+        <h6 class="mb-2">Наименование коммунальной услуги</h6>
+        <input class="form-control mb-5" name="Receipt_type" type="text" value="Общая квитанция ЖКУ" aria-label="Receipt_type" disabled readonly>
+        <button type="submit" class="btn">Составить общую квитанцию</button>
+    </form>
+{% endblock %}

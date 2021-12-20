@@ -1,48 +1,48 @@
 {% extends 'parts/base.twig' %}
 
 {% block title %}
-    Внесение показаний
+    Добавление квитанции
 {% endblock %}
 
 {% block content %}
-    <h1>Внесение показаний по потребителю</h1>
+    <h1 class="mb-0">Добавление квитанции за телефон для пользователя</h1>
     <h2 class="mb-5">
         {{ consumer_info.First_name }} {{ consumer_info.Last_name }} ({{ consumer_info.Consumer_email }})
     </h2>
+
     {% include 'parts/_message.twig' %}
-    <form method="post" action="/add-readings-post/{{ consumer_info.Consumer_id }}/">
+    <form method="post" action="/add-phone-receipt-post/{{ consumer_info.Consumer_id }}/">
         <div class="mb-3">
-            <label for="Consumer_reading" class="form-label"><b>Показание прибора, осуществляющего учет</b></label>
+            <label for="Consumer_reading" class="form-label"><b>Количество минут, которые наговорил потребитель</b></label>
             <input type="text" name="Consumer_reading" class="form-control" id="Consumer_reading"
                    aria-describedby="Consumer_reading" value="{{ form ? form.Consumer_reading }}">
             <div id="Consumer_reading" class="form-text">Формат: 44.60 (разделитель точка)</div>
         </div>
-        <h5 class="mb-2 text-center">Период, за который вносится показание</h5>
-        <div class="d-flex justify-content-evenly">
+        <h5 class="mb-2 text-center">Период, за который составляется квитанция</h5>
+        <div class="d-flex justify-content-evenly text-center">
             <div>
-                <p class="mb-0 text-center">Месяц</p>
-                <select class="form-select mb-3" name="Reading_month" aria-label="Reading_type">
+                <p class="mb-0">Месяц</p>
+                <select class="form-select mb-3" name="Receipt_month" aria-label="Receipt_month">
                     {% for month in months %}
                         <option value="{{ month }}">{{ month }}</option>
                     {% endfor %}
                 </select>
             </div>
             <div>
-                <p class="mb-0 text-center">Год</p>
-                <select class="form-select mb-3" name="Reading_year" aria-label="Reading_year">
+                <p class="mb-0">Год</p>
+                <select class="form-select mb-3" name="Receipt_year" aria-label="Receipt_year">
                     {% for year in years %}
                         <option value="{{ year }}">{{ year }}</option>
                     {% endfor %}
                 </select>
             </div>
-
         </div>
-        <h5 class="mb-2">Наименование квитанции</h5>
-        <select class="form-select mb-3" name="Reading_type" aria-label="Reading_type">
+        <h6 class="mb-2">Наименование квитанции</h6>
+        <select class="form-select mb-5" name="Receipt_type" aria-label="Receipt_type">
             {% for type in types %}
                 <option value="{{ type }}">{{ type }}</option>
             {% endfor %}
         </select>
-        <button type="submit" class="btn">Внести показание</button>
+        <button type="submit" class="btn">Составить общую квитанцию</button>
     </form>
 {% endblock %}

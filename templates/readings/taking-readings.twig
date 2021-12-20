@@ -14,10 +14,10 @@
                    aria-describedby="Consumer_reading" value="{{ form ? form.Consumer_reading }}">
             <div id="Consumer_reading" class="form-text">Формат: 44.60 (разделитель точка)</div>
         </div>
-        <p class="mb-2">Период, за который вносится показание</p>
+        <h5 class="mb-2 text-center">Период, за который вносится показание</h5>
         <div class="d-flex justify-content-evenly">
             <div>
-                <p class="mb-0">Месяц</p>
+                <p class="mb-0 text-center">Месяц</p>
                 <select class="form-select mb-3" name="Reading_month" aria-label="Reading_type">
                     {% for month in months %}
                         <option value="{{ month }}">{{ month }}</option>
@@ -25,7 +25,7 @@
                 </select>
             </div>
             <div>
-                <p class="mb-0">Год</p>
+                <p class="mb-0 text-center">Год</p>
                 <select class="form-select mb-3" name="Reading_year" aria-label="Reading_year">
                     {% for year in years %}
                         <option value="{{ year }}">{{ year }}</option>
@@ -34,7 +34,7 @@
             </div>
 
         </div>
-        <p class="mb-1">Наименование коммунальной услуги</p>
+        <h5 class="mb-2">Наименование коммунальной услуги</h5>
         <select class="form-select mb-3" name="Reading_type" aria-label="Reading_type">
             {% for type in types %}
                 <option value="{{ type }}">{{ type }}</option>
