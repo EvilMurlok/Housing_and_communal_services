@@ -20,6 +20,7 @@ use App\TakingReading;
 use App\TakingReadingException;
 use App\TopUpAccount;
 use App\TopUpAccountException;
+use JetBrains\PhpStorm\ArrayShape;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
@@ -169,7 +170,43 @@ function checkUserRights($session, $response, $message): bool
     return true;
 }
 
+#[ArrayShape(["types" => "string[]", "months" => "string[]", "years" => "array", "template_name" => "string"])]
+function getRequiredParameters($session) :array{
+    if ($session->getData("user")["Is_staff"] == 1){
+        $types = ["Горячее водоснабжение", "Холодное водоснабжение", "Электроэнергия", "Отопление", "Газ"];
+        $template_name = "readings/taking-reading-by-mc.twig";
+    }
+    else{
+        $types = ["Горячее водоснабжение", "Холодное водоснабжение", "Электроэнергия"];
+        $template_name = "readings/taking-readings.twig";
+    }
+    $months = ["Январь", "Февраль", "Март", "Апрель", "Май",
+        "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"];
+    $years = [];
+    for ($i = 2019; $i <= (int) date("Y"); ++$i){
+        $years[] = $i;
+    }
+    return [
+        "types" => $types,
+        "months" => $months,
+        "years" => $years,
+        "template_name" => $template_name
+    ];
+}
 
+function fulfill_post_request($request, &$session, $add_reading, $user_id) {
+    $params = (array) $request->getParsedBody($user_id);
+    try {
+        $add_reading->add_reading($params, $user_id);
+        $session->setData("message", "Показание за услугу: '" . $params["Reading_type"] . "' успешно внесено!");
+        $session->setData("status", "success");
+    }
+    catch (TakingReadingException $exception){
+        $session->setData("message", $exception->getMessage());
+        $session->setData("status", "danger");
+        $session->setData("form", $params);
+    }
+}
 // такие callback-функции должны возвращать строго $response!
 $app->get("/",
     function (ServerRequestInterface $request, ResponseInterface $response) use ($twig, $session, $database) {
@@ -595,47 +632,63 @@ $app->post("/top-up-an-account-post/",
 
 $app->get("/add-reading/",
     function (ServerRequestInterface $request, ResponseInterface $response) use ($database, $session, $twig){
-        $types = [];
-        if ($session->getData("user")["Is_staff"] == 1){
-            $types = ["Горячее водоснабжение", "Холодное водоснабжение", "Электроэнергия", "Отопление", "Газ"];
-        }
-        else{
-            $types = ["Горячее водоснабжение", "Холодное водоснабжение", "Электроэнергия"];
-        }
-        $month = ["Январь", "Февраль", "Март", "Апрель", "Май",
-                  "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"];
-        $years = [];
-        for ($i = 2019; $i <= (int) date("Y"); ++$i){
-            $years[] = $i;
-        }
-        $body = $twig->render("readings/taking-readings.twig", [
+        $required_parameters = getRequiredParameters($session);
+        $body = $twig->render($required_parameters["template_name"], [
             "user" => $session->getData("user"),
             "message" => $session->flush("message"),
             "form" => $session->flush("form"),
             "status" => $session->flush("status"),
-            "types" => $types,
-            "months" => $month,
-            "years" => $years
+            "types" => $required_parameters["types"],
+            "months" => $required_parameters["months"],
+            "years" => $required_parameters["years"]
         ]);
         $response->getBody()->write($body);
         return $response;
     });
 
+$app->get("/add-reading/{consumer_id}/",
+    function (ServerRequestInterface $request, ResponseInterface $response, $args) use ($database, $session, $twig){
+        $required_parameters = getRequiredParameters($session);
+        $body = $twig->render($required_parameters["template_name"], [
+            "user" => $session->getData("user"),
+            "message" => $session->flush("message"),
+            "form" => $session->flush("form"),
+            "status" => $session->flush("status"),
+            "types" => $required_parameters["types"],
+            "months" => $required_parameters["months"],
+            "years" => $required_parameters["years"],
+            "consumer_id" => $args["consumer_id"]
+        ]);
+        $response->getBody()->write($body);
+        return $response;
+    });
+
+
 $app->post("/add-readings-post/",
     function(ServerRequestInterface $request, ResponseInterface $response) use ($database, $session, $add_reading){
-        $params = (array)$request->getParsedBody();
-        try {
-            $add_reading->add_reading($params, $session->getData("user")["Consumer_id"]);
-            $session->setData("message", "Показание за услугу: '" . $params["Reading_type"] . "' успешно внесено!");
-            $session->setData("status", "success");
-        }
-        catch (TakingReadingException $exception){
-            $session->setData("message", $exception->getMessage());
-            $session->setData("status", "danger");
-            $session->setData("form", $params);
-        }
+        fulfill_post_request($request, $session, $add_reading, $session->getData("user")["Consumer_id"]);
         return $response->withHeader("Location", "/add-reading/")
             ->withStatus(302);
     });
 
+$app->post("/add-readings-post/{consumer_id}/",
+    function(ServerRequestInterface $request, ResponseInterface $response, $args) use ($database, $session, $add_reading){
+        fulfill_post_request($request, $session, $add_reading, $args['consumer_id']);
+        return $response->withHeader("Location", "/add-reading/{$args['consumer_id']}/")
+            ->withStatus(302);
+    });
+
+
+$app->get("/list-consumers-of-management-company/",
+    function (ServerRequestInterface $request, ResponseInterface $response) use ($database, $session, $twig){
+        $query = $database->getConnection()->query(
+            "SELECT Consumer_id, First_name, Last_name, Patronymic, 
+                              Consumer_email, Birthday, Telephone_number
+                       FROM Consumer c INNER JOIN Address a USING(Address_id)
+                       WHERE a.Management_company_id = {$session->getData("user")["Management_company_id"]}
+                       ORDER BY Last_name, First_name"
+        );
+        return renderPageByQuery($query, $session, $twig, $response,
+            "readings/consumers-of-management-company.twig", "consumers");
+});
 $app->run();

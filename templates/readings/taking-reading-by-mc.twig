@@ -1,0 +1,45 @@
+{% extends 'parts/base.twig' %}
+
+{% block title %}
+    Внесение показаний
+{% endblock %}
+
+{% block content %}
+    <h1>Внесение показаний</h1>
+    {% include 'parts/_message.twig' %}
+    <form method="post" action="/add-readings-post/{{ consumer_id }}/">
+        <div class="mb-3">
+            <label for="Consumer_reading" class="form-label">Показание прибора, осуществляющего учет</label>
+            <input type="text" name="Consumer_reading" class="form-control" id="Consumer_reading"
+                   aria-describedby="Consumer_reading" value="{{ form ? form.Consumer_reading }}">
+            <div id="Consumer_reading" class="form-text">Формат: 44.60 (разделитель точка)</div>
+        </div>
+        <p class="mb-2">Период, за который вносится показание</p>
+        <div class="d-flex justify-content-evenly">
+            <div>
+                <p class="mb-0">Месяц</p>
+                <select class="form-select mb-3" name="Reading_month" aria-label="Reading_type">
+                    {% for month in months %}
+                        <option value="{{ month }}">{{ month }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <p class="mb-0">Год</p>
+                <select class="form-select mb-3" name="Reading_year" aria-label="Reading_year">
+                    {% for year in years %}
+                        <option value="{{ year }}">{{ year }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+        </div>
+        <p class="mb-1">Наименование коммунальной услуги</p>
+        <select class="form-select mb-3" name="Reading_type" aria-label="Reading_type">
+            {% for type in types %}
+                <option value="{{ type }}">{{ type }}</option>
+            {% endfor %}
+        </select>
+        <button type="submit" class="btn">Внести показание</button>
+    </form>
+{% endblock %}

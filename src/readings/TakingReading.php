@@ -26,14 +26,16 @@ class TakingReading extends ValidationData {
         "Горячее водоснабжение" => "HotWaterСharge",
         "Холодное водоснабжение" => "ColdWaterСharge",
         "Электроэнергия" => "ElectricityСharge",
-        "Отопление" => "HeatingСharge"
+        "Отопление" => "HeatingСharge",
+        "Газ" => "GasСharge"
     ];
 
     private array $type_of_rate = [
         "Горячее водоснабжение" => "ГВС",
         "Холодное водоснабжение" => "ХВС",
         "Электроэнергия" => "Электроснабжение",
-        "Отопление" => "Отопление"
+        "Отопление" => "Отопление",
+        "Газ" => "Газ"
     ];
 
     #[Pure] public function __construct(Database $database, $session)
@@ -54,6 +56,13 @@ class TakingReading extends ValidationData {
             $data = $this->validate_data($data, $user_id, $period_of_reading, $type_of_reading);
         } catch (TakingReadingException $exception) {
             throw new TakingReadingException($exception->getMessage());
+        }
+
+        if ($this->session->getData("user")["Is_staff"] == 1){
+            $is_consumer = 0;
+        }
+        else{
+            $is_consumer = 1;
         }
 
         // get rate_id and tariff_amount
@@ -81,7 +90,7 @@ class TakingReading extends ValidationData {
             "amount_of_unit" => $data["Consumer_reading"],
             "charge_period" => $period_of_reading,
             "information_entering_date" => date("Y-m-d"),
-            "is_consumer" => 1,
+            "is_consumer" => $is_consumer,
             "consumer_id" => $user_id,
             "management_company_id" => $mc_id,
             "rate_id" => $rate_info["Rate_id"],
