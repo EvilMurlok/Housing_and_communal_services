@@ -1,0 +1,59 @@
+{% extends 'parts/base.twig' %}
+
+{% block title %}
+    Выберите счет
+{% endblock %}
+
+{% block content %}
+    <h1>Пополнение счёта</h1>
+    {% include 'parts/_message.twig' %}
+    <table class="table mb-5">
+        <thead>
+            <tr>
+                <th scope="col">Наименование счета</th>
+                <th scope="col">Доступные средства</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Общий счет ЖКУ:</td>
+                <td>
+                    <span>{{ accounts.Personal_acc_hcs }}</span>
+                </td>
+            </tr>
+            <tr>
+                <td>Счет за городской телефон:</td>
+                <td>
+                    <span>{{ accounts.Personal_acc_landline_ph }}</span>
+                </td>
+            </tr>
+            <tr>
+                <td>Счет за междугородний телефон:</td>
+                <td>
+                    <span>{{ accounts.Personal_acc_long_dist_ph }}</span>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <form method="post" action="/top-up-an-account-post/">
+        <div class="mb-3">
+            <label for="Consumer_phone_email" class="form-label">Ваш мобильный телефон, который вы указали на
+                сайте</label>
+            <input type="text" name="Consumer_phone" class="form-control" id="Consumer_phone"
+                   aria-describedby="Consumer_phone" value="{{ form ? form.Consumer_phone }}">
+            <div id="Consumer_phone" class="form-text">Формат: 89997776655</div>
+        </div>
+        <div class="mb-3">
+            <label for="Amount_of_money" class="form-label">Вносимая сумма</label>
+            <input type="text" name="Amount_of_money" class="form-control" id="Amount_of_money"
+                   aria-describedby="Amount_of_money">
+            <div id="Amount_of_money" class="form-text">Вы можете внести не больше 5000 ₽</div>
+        </div>
+        <select class="form-select mb-3" name="Account_type" aria-label="Account_type">
+            {% for choice in choices %}
+                <option value="{{ choice }}">{{ choice }}</option>
+            {% endfor %}
+        </select>
+        <button type="submit" class="btn">Пополнить</button>
+    </form>
+{% endblock %}

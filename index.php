@@ -16,6 +16,8 @@ use App\EditionNews;
 use App\EditionOrganization;
 use App\Session;
 
+use App\TopUpAccount;
+use App\TopUpAccountException;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
@@ -37,6 +39,9 @@ require_once "/Users/macbookair/Desktop/Housing_and_communal_services/src/additi
 require_once "/Users/macbookair/Desktop/Housing_and_communal_services/src/additionOrganization/AdditionOrganization.php";
 require_once "/Users/macbookair/Desktop/Housing_and_communal_services/src/additionOrganization/EditionOrganization.php";
 require_once "/Users/macbookair/Desktop/Housing_and_communal_services/src/additionOrganization/AdditionOrganizationException.php";
+require_once "/Users/macbookair/Desktop/Housing_and_communal_services/src/Account/TopUpAccount.php";
+require_once "/Users/macbookair/Desktop/Housing_and_communal_services/src/Account/TopUpAccountException.php";
+
 $config = include_once "/Users/macbookair/Desktop/Housing_and_communal_services/config/databaseInfo.php";
 $dsn = $config["dsn"];
 $username = $config["username"];
@@ -74,7 +79,7 @@ $sessionMiddleware = function (ServerRequestInterface $request, RequestHandlerIn
             ]);
         }
     }
-    $session_timeout = 60; // in seconds
+    $session_timeout = 120; // in seconds
     if (!isset($_SESSION['last_visit'])) {
         $_SESSION['last_visit'] = time();
     }
@@ -112,6 +117,9 @@ $edit_news = new EditionNews($database, $session);
 // addition edition organization block
 $add_organization = new AdditionOrganization($database, $session);
 $edit_organization = new EditionOrganization($database, $session);
+
+// top up an account block
+$top_up_account = new TopUpAccount($database, $session);
 
 function renderPageByQuery($query, $session, $twig, $response, $name_render_page, $name_form = "form", $need_one = 0): ResponseInterface
 {
@@ -537,6 +545,55 @@ $app->get("/delete-organization/{organization_id}/",
         $session->setData("message", "Организация успешно удалена!");
         $session->setData("status", "success");
         return $response->withHeader("Location", "/organization-list/")
+            ->withStatus(302);
+    });
+
+$app->get("/top-up-an-account/",
+    function (ServerRequestInterface $request, ResponseInterface $response) use ($database, $session, $twig){
+        $choices = ["Общий счет ЖКУ", "Городской телефон", "Междугородний телефон"];
+        $all_accounts = $database->getConnection()->query("
+            SELECT Personal_acc_hcs, Personal_acc_landline_ph, Personal_acc_long_dist_ph 
+            FROM Consumer
+            WHERE Telephone_number = '" . $session->getData('user')['Telephone_number'] . "'"
+        )->fetch();
+        $session->setData("accounts", $all_accounts);
+        $session->setData("choices", $choices);
+        $body = $twig->render("account/top-up-an-account.twig", [
+            "user" => $session->getData("user"),
+            "message" => $session->flush("message"),
+            "form" => $session->flush("form"),
+            "choices" => $session->flush("choices"),
+            "status" => $session->flush("status"),
+            "accounts" => $session->flush("accounts")
+        ]);
+        $response->getBody()->write($body);
+        return $response;
+    });
+
+$app->post("/top-up-an-account-post/",
+    function(ServerRequestInterface $request, ResponseInterface $response) use ($database, $session, $top_up_account){
+        $params = (array)$request->getParsedBody();
+        $kind_of_account = "";
+        if ($params["Account_type"] == "Общий счет ЖКУ"){
+            $kind_of_account = "Personal_acc_hcs";
+        }
+        elseif ($params["Account_type"] == "Городской телефон"){
+            $kind_of_account = "Personal_acc_landline_ph";
+        }
+        else{
+            $kind_of_account = "Personal_acc_long_dist_ph";
+        }
+        try {
+            $top_up_account->top_up_account($params, $session->getData("user")["Telephone_number"], $kind_of_account);
+            $session->setData("message", "Счет: '" . $params["Account_type"] . "' успешно пополнен!");
+            $session->setData("status", "success");
+        }
+        catch (TopUpAccountException $exception){
+            $session->setData("message", $exception->getMessage());
+            $session->setData("status", "danger");
+            $session->setData("form", $params);
+        }
+        return $response->withHeader("Location", "/top-up-an-account/")
             ->withStatus(302);
     });
 
