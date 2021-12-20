@@ -16,6 +16,8 @@ use App\EditionNews;
 use App\EditionOrganization;
 use App\Session;
 
+use App\TakingReading;
+use App\TakingReadingException;
 use App\TopUpAccount;
 use App\TopUpAccountException;
 use Psr\Http\Message\ResponseInterface;
@@ -29,18 +31,20 @@ use Twig\Loader\FilesystemLoader;
 
 require_once "/Users/macbookair/Desktop/Housing_and_communal_services/src/Database.php";
 require_once "/Users/macbookair/Desktop/Housing_and_communal_services/src/Session.php";
-require_once "/Users/macbookair/Desktop/Housing_and_communal_services/src/Authorization/AuthorizationConsumer.php";
-require_once "/Users/macbookair/Desktop/Housing_and_communal_services/src/Authorization/AuthorizationConsumerException.php";
-require_once "/Users/macbookair/Desktop/Housing_and_communal_services/src/Authorization/AuthorizationEntity.php";
-require_once "/Users/macbookair/Desktop/Housing_and_communal_services/src/Authorization/AuthorizationEntityException.php";
+require_once "/Users/macbookair/Desktop/Housing_and_communal_services/src/authorization/AuthorizationConsumer.php";
+require_once "/Users/macbookair/Desktop/Housing_and_communal_services/src/authorization/AuthorizationConsumerException.php";
+require_once "/Users/macbookair/Desktop/Housing_and_communal_services/src/authorization/AuthorizationEntity.php";
+require_once "/Users/macbookair/Desktop/Housing_and_communal_services/src/authorization/AuthorizationEntityException.php";
 require_once "/Users/macbookair/Desktop/Housing_and_communal_services/src/additionNews/AdditionNews.php";
 require_once "/Users/macbookair/Desktop/Housing_and_communal_services/src/additionNews/AdditionNewsException.php";
 require_once "/Users/macbookair/Desktop/Housing_and_communal_services/src/additionNews/EditionNews.php";
 require_once "/Users/macbookair/Desktop/Housing_and_communal_services/src/additionOrganization/AdditionOrganization.php";
 require_once "/Users/macbookair/Desktop/Housing_and_communal_services/src/additionOrganization/EditionOrganization.php";
 require_once "/Users/macbookair/Desktop/Housing_and_communal_services/src/additionOrganization/AdditionOrganizationException.php";
-require_once "/Users/macbookair/Desktop/Housing_and_communal_services/src/Account/TopUpAccount.php";
-require_once "/Users/macbookair/Desktop/Housing_and_communal_services/src/Account/TopUpAccountException.php";
+require_once "/Users/macbookair/Desktop/Housing_and_communal_services/src/account/TopUpAccount.php";
+require_once "/Users/macbookair/Desktop/Housing_and_communal_services/src/account/TopUpAccountException.php";
+require_once "/Users/macbookair/Desktop/Housing_and_communal_services/src/readings/TakingReading.php";
+require_once "/Users/macbookair/Desktop/Housing_and_communal_services/src/readings/TakingReadingException.php";
 
 $config = include_once "/Users/macbookair/Desktop/Housing_and_communal_services/config/databaseInfo.php";
 $dsn = $config["dsn"];
@@ -79,20 +83,20 @@ $sessionMiddleware = function (ServerRequestInterface $request, RequestHandlerIn
             ]);
         }
     }
-    $session_timeout = 120; // in seconds
-    if (!isset($_SESSION['last_visit'])) {
-        $_SESSION['last_visit'] = time();
-    }
-    if((!isset($_COOKIE["password_cookie_token"]) || empty($_COOKIE["password_cookie_token"]))
-        && isset($_SESSION['user'])
-        && ((time() - $_SESSION['last_visit']) > $session_timeout))
-    {
-        unset($_SESSION['last_visit']);
-        unset($_SESSION);
-        header("Location: /logout/");
-        exit;
-    }
-    $_SESSION['last_visit'] = time();
+//    $session_timeout = 1200; // in seconds
+//    if (!isset($_SESSION['last_visit'])) {
+//        $_SESSION['last_visit'] = time();
+//    }
+//    if((!isset($_COOKIE["password_cookie_token"]) || empty($_COOKIE["password_cookie_token"]))
+//        && isset($_SESSION['user'])
+//        && ((time() - $_SESSION['last_visit']) > $session_timeout))
+//    {
+//        unset($_SESSION['last_visit']);
+//        unset($_SESSION);
+//        header("Location: /logout/");
+//        exit;
+//    }
+//    $_SESSION['last_visit'] = time();
     $response = $handler->handle($request);
     $session->save();
     var_dump($_SESSION);
@@ -120,6 +124,9 @@ $edit_organization = new EditionOrganization($database, $session);
 
 // top up an account block
 $top_up_account = new TopUpAccount($database, $session);
+
+// taking_reading block
+$add_reading = new TakingReading($database, $session);
 
 function renderPageByQuery($query, $session, $twig, $response, $name_render_page, $name_form = "form", $need_one = 0): ResponseInterface
 {
@@ -556,15 +563,13 @@ $app->get("/top-up-an-account/",
             FROM Consumer
             WHERE Telephone_number = '" . $session->getData('user')['Telephone_number'] . "'"
         )->fetch();
-        $session->setData("accounts", $all_accounts);
-        $session->setData("choices", $choices);
         $body = $twig->render("account/top-up-an-account.twig", [
             "user" => $session->getData("user"),
             "message" => $session->flush("message"),
             "form" => $session->flush("form"),
-            "choices" => $session->flush("choices"),
             "status" => $session->flush("status"),
-            "accounts" => $session->flush("accounts")
+            "choices" => $choices,
+            "accounts" => $all_accounts
         ]);
         $response->getBody()->write($body);
         return $response;
@@ -573,18 +578,8 @@ $app->get("/top-up-an-account/",
 $app->post("/top-up-an-account-post/",
     function(ServerRequestInterface $request, ResponseInterface $response) use ($database, $session, $top_up_account){
         $params = (array)$request->getParsedBody();
-        $kind_of_account = "";
-        if ($params["Account_type"] == "Общий счет ЖКУ"){
-            $kind_of_account = "Personal_acc_hcs";
-        }
-        elseif ($params["Account_type"] == "Городской телефон"){
-            $kind_of_account = "Personal_acc_landline_ph";
-        }
-        else{
-            $kind_of_account = "Personal_acc_long_dist_ph";
-        }
         try {
-            $top_up_account->top_up_account($params, $session->getData("user")["Telephone_number"], $kind_of_account);
+            $top_up_account->top_up_account($params, $session->getData("user")["Telephone_number"]);
             $session->setData("message", "Счет: '" . $params["Account_type"] . "' успешно пополнен!");
             $session->setData("status", "success");
         }
@@ -594,6 +589,52 @@ $app->post("/top-up-an-account-post/",
             $session->setData("form", $params);
         }
         return $response->withHeader("Location", "/top-up-an-account/")
+            ->withStatus(302);
+    });
+
+
+$app->get("/add-reading/",
+    function (ServerRequestInterface $request, ResponseInterface $response) use ($database, $session, $twig){
+        $types = [];
+        if ($session->getData("user")["Is_staff"] == 1){
+            $types = ["Горячее водоснабжение", "Холодное водоснабжение", "Электроэнергия", "Отопление", "Газ"];
+        }
+        else{
+            $types = ["Горячее водоснабжение", "Холодное водоснабжение", "Электроэнергия"];
+        }
+        $month = ["Январь", "Февраль", "Март", "Апрель", "Май",
+                  "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"];
+        $years = [];
+        for ($i = 2019; $i <= (int) date("Y"); ++$i){
+            $years[] = $i;
+        }
+        $body = $twig->render("readings/taking-readings.twig", [
+            "user" => $session->getData("user"),
+            "message" => $session->flush("message"),
+            "form" => $session->flush("form"),
+            "status" => $session->flush("status"),
+            "types" => $types,
+            "months" => $month,
+            "years" => $years
+        ]);
+        $response->getBody()->write($body);
+        return $response;
+    });
+
+$app->post("/add-readings-post/",
+    function(ServerRequestInterface $request, ResponseInterface $response) use ($database, $session, $add_reading){
+        $params = (array)$request->getParsedBody();
+        try {
+            $add_reading->add_reading($params, $session->getData("user")["Consumer_id"]);
+            $session->setData("message", "Показание за услугу: '" . $params["Reading_type"] . "' успешно внесено!");
+            $session->setData("status", "success");
+        }
+        catch (TakingReadingException $exception){
+            $session->setData("message", $exception->getMessage());
+            $session->setData("status", "danger");
+            $session->setData("form", $params);
+        }
+        return $response->withHeader("Location", "/add-reading/")
             ->withStatus(302);
     });
 

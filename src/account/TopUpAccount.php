@@ -4,7 +4,7 @@ namespace App;
 
 use JetBrains\PhpStorm\Pure;
 
-require_once "/Users/macbookair/Desktop/Housing_and_communal_services/src/Account/ValidationAccountData.php";
+require_once "/Users/macbookair/Desktop/Housing_and_communal_services/src/account/ValidationAccountData.php";
 
 class TopUpAccount extends ValidationAccountData
 {
@@ -16,8 +16,18 @@ class TopUpAccount extends ValidationAccountData
     /**
      * @throws TopUpAccountException
      */
-    public function top_up_account(array $data, $user_phone, $kind_of_account): bool
+    public function top_up_account(array $data, $user_phone): bool
     {
+        if ($data["Account_type"] == "Общий счет ЖКУ"){
+            $kind_of_account = "Personal_acc_hcs";
+        }
+        elseif ($data["Account_type"] == "Городской телефон"){
+            $kind_of_account = "Personal_acc_landline_ph";
+        }
+        else{
+            $kind_of_account = "Personal_acc_long_dist_ph";
+        }
+
         try {
             $data = $this->validate_data($data, $user_phone);
         } catch (TopUpAccountException $exception) {

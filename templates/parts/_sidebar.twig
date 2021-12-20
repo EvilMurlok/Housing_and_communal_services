@@ -7,7 +7,7 @@
         {% if user is not null and user.Is_staff == false %}
             <a href="/view-consumer/{{  user.Consumer_id }}/" class="list-group-item list-group-item-action">Личная информация</a>
             <a href="/top-up-an-account/" class="list-group-item list-group-item-action">Пополнить счет</a>
-            <a href="#" class="list-group-item list-group-item-action">Внести показания</a>
+            <a href="/add-reading/" class="list-group-item list-group-item-action">Прием показаний приборов учета воды и электроэнергии</a>
             <a href="#" class="list-group-item list-group-item-action">Оплаченные квитанции</a>
             <a href="#" class="list-group-item list-group-item-action">Неоплаченные квитанции</a>
         {% elseif user is not null and user.Is_staff == true %}
