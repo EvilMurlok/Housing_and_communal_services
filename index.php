@@ -268,11 +268,16 @@ function get_lists_of_consumers($database, $twig, $session, $response, $template
     return renderPageByQuery($query, $session, $twig, $response, $template_name, "consumers");
 }
 
-function fulfill_receipts_post_request($request, &$session, $add_receipt, $user_id) {
+function fulfill_receipts_post_request($request, &$session, $add_receipt, $user_id, $is_phone) {
     $params = (array) $request->getParsedBody($user_id);
     try {
         $add_receipt->add_receipt($params, $user_id);
-        $session->setData("message", "Квитанция: '" . $params["Receipt_type"] . "' успешно создана!");
+        if ($is_phone == 1){
+            $session->setData("message", "Квитанция: '" . $params["Receipt_type"] . "' успешно создана!");
+        }
+        else {
+            $session->setData("message", "Квитанция: 'Общая квитанция ЖКУ' успешно создана!");
+        }
         $session->setData("status", "success");
     }
     catch (CreateReceiptException $exception){
@@ -787,14 +792,14 @@ $app->get("/add-phone-receipt/{consumer_id}/",
 
 $app->post("/add-common-receipt-post/{consumer_id}/",
     function (ServerRequestInterface $request, ResponseInterface $response, $args) use ($database, $session, $add_common_receipt){
-        fulfill_receipts_post_request($request, $session, $add_common_receipt, $args['consumer_id']);
+        fulfill_receipts_post_request($request, $session, $add_common_receipt, $args['consumer_id'], 0);
         return $response->withHeader("Location", "/add-common-receipt/{$args['consumer_id']}/")
             ->withStatus(302);
     });
 
 $app->post("/add-phone-receipt-post/{consumer_id}/",
     function (ServerRequestInterface $request, ResponseInterface $response, $args) use ($database, $session, $add_phone_receipt){
-        fulfill_receipts_post_request($request, $session, $add_phone_receipt, $args['consumer_id']);
+        fulfill_receipts_post_request($request, $session, $add_phone_receipt, $args['consumer_id'], 1);
         return $response->withHeader("Location", "/add-phone-receipt/{$args['consumer_id']}/")
             ->withStatus(302);
     });

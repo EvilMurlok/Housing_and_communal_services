@@ -8,8 +8,22 @@
             <a href="/view-consumer/{{  user.Consumer_id }}/" class="list-group-item list-group-item-action">Личная информация</a>
             <a href="/top-up-an-account/" class="list-group-item list-group-item-action">Пополнить счет</a>
             <a href="/add-reading/" class="list-group-item list-group-item-action">Прием показаний приборов учета воды и электроэнергии</a>
-            <a href="#" class="list-group-item list-group-item-action">Оплаченные квитанции</a>
-            <a href="#" class="list-group-item list-group-item-action">Неоплаченные квитанции</a>
+            <a class="dropdown">
+                <a class="dropdown-toggle list-group-item list-group-item-action" id="Show_receipt"
+                   data-bs-toggle="dropdown" aria-expanded="false">Оплаченные квитанции</a>
+                <ul class="dropdown-menu" aria-labelledby="Show_receipt">
+                    <li><a class="dropdown-item" href="/show-paid-common-receipts/{{ user.Consumer_id }}/">Общие квитанции ЖКУ</a></li>
+                    <li><a class="dropdown-item" href="/show-paid-phone-receipts/{{ user.Consumer_id }}/">Квитанции за телефон</a></li>
+                </ul>
+            </a>
+            <a class="dropdown">
+                <a class="dropdown-toggle list-group-item list-group-item-action" id="Show_receipt"
+                   data-bs-toggle="dropdown" aria-expanded="false">Неоплаченные квитанции</a>
+                <ul class="dropdown-menu" aria-labelledby="Show_receipt">
+                    <li><a class="dropdown-item" href="/show-not-paid-common-receipts/{{ user.Consumer_id }}/">Общие квитанции ЖКУ</a></li>
+                    <li><a class="dropdown-item" href="/show-not-paid-phone-receipts/{{ user.Consumer_id }}/">Квитанции за телефон</a></li>
+                </ul>
+            </a>
         {% elseif user is not null and user.Is_staff == true %}
             <a href="/consumer-list/" class="list-group-item list-group-item-action">Список пользователей, зарегистрированных в сервисе</a>
             <a href="/list-consumers-of-management-company/" class="list-group-item list-group-item-action">Внести показания по пользователям</a>

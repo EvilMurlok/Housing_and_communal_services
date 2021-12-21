@@ -58,7 +58,7 @@ class ValidationReceiptData{
         }
 
         // $period_of_receipt block
-        if ($period_of_receipt > date("Y-m-d")){
+        if ($period_of_receipt >= date("Y-m-d")){
             throw new CreateReceiptException("Вы не можете создать тариф за будущие месяцы!");
         }
 
@@ -71,9 +71,16 @@ class ValidationReceiptData{
             "period_of_receipt" => $period_of_receipt
         ]);
         if ($statement->rowCount() > 0){
-            throw new CreateReceiptException("Квитанция: '".
-                $data["Receipt_type"] ."', за период: ".
-                $data["Receipt_month"] . " " . $data["Receipt_year"] . " уже существует!");
+            if ($is_phone == 1){
+                throw new CreateReceiptException("Квитанция: '".
+                    $data["Receipt_type"] ."', за период: ".
+                    $data["Receipt_month"] . " " . $data["Receipt_year"] . " уже существует!");
+            }
+            else{
+                throw new CreateReceiptException("Квитанция: 'Общая квитанция ЖКУ', за период: ".
+                    $data["Receipt_month"] . " " . $data["Receipt_year"] . " уже существует!");
+            }
+
         }
     }
 
@@ -84,8 +91,15 @@ class ValidationReceiptData{
     #[ArrayShape(["period_of_receipt" => "string", "type_of_receipt" => "mixed|string", "type_of_rate" => "mixed|string"])]
     protected function validate_get_receipt_parameters($data, $user_id, $is_phone): array{
         $period_of_receipt = $data["Receipt_year"]. "-". $this->month_to_number[$data["Receipt_month"]] ."-01";
-        $type_of_receipt = $this->type_of_receipt[$data["Receipt_type"]];
-        $type_of_rate = $this->type_of_rate[$data["Receipt_type"]];
+        if ($is_phone){
+            $type_of_receipt = $this->type_of_receipt[$data["Receipt_type"]];
+            $type_of_rate = $this->type_of_rate[$data["Receipt_type"]];
+        }
+        else{
+            $type_of_receipt = "ReceiptHCS";
+            $type_of_rate = "";
+        }
+
 
         try {
             $this->validate_data($data, $user_id, $period_of_receipt, $type_of_receipt, $is_phone);

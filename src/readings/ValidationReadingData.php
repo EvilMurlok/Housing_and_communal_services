@@ -25,7 +25,7 @@ class ValidationReadingData{
         }
 
         // $period_of_reading block
-        if ($period_of_reading > date("Y-m-d")){
+        if ($period_of_reading >= date("Y-m-d")){
             throw new TakingReadingException("Вы не можете внести показания за будущие месяцы!");
         }
 

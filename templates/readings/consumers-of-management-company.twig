@@ -10,7 +10,7 @@
     <div id="consumer-list">
         {% for consumer in consumers %}
             <div class="card mb-3">
-                <div class="card-body">
+                <div class="card-body text-center">
                     <h5 class="card-title">{{ consumer.Last_name }} {{ consumer.First_name }} {{ consumer.Patronymic }}</h5>
                     <p class="card-text">
                         <b>Дата рождения:</b> {{ consumer.Birthday }}
@@ -20,7 +20,7 @@
                         <b>Телефон:</b> {{ consumer.Telephone_number }}
                     </p>
                 </div>
-                <div class="card-footer text-muted d-flex justify-content-between">
+                <div class="card-footer text-muted d-flex justify-content-evenly">
                     <a href="/read-more-consumer/{{ consumer.Consumer_id }}/" class="btn">Узнать больше</a>
                     <a href="/add-reading/{{ consumer.Consumer_id }}/" class="btn">Добавить показание</a>
                 </div>

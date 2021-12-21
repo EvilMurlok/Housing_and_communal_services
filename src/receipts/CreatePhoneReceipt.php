@@ -37,11 +37,12 @@ class CreatePhoneReceipt extends ValidationReceiptData{
 
         $tariff_amount = $rate_info["Unit_cost"] * $data["Consumer_reading"];
         $information_entering_date = date("Y-m-d");
-        $last_month_day = date('t', strtotime($information_entering_date));
 
-        $deadline_date = $data["Receipt_year"] . "-" . $this->month_to_number[$data["Receipt_month"]] . "-" . $last_month_day;
+
+        $deadline_date = date('Y-m-d', strtotime(date("Y-m-d"). ' + 30 days'));
 
 //        testing working of functions
+//        $last_month_day = date('t', strtotime($information_entering_date));
 //        $deadline_date = date('Y-m-d', strtotime(date("Y-m-d"). ' - 3 days'));
 //        $overdue_days = date_diff(new DateTime($deadline_date), new DateTime(date("Y-m-d")))->days;
 //

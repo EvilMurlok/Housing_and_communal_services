@@ -10,7 +10,7 @@
     <div id="consumer-list">
         {% for consumer in consumers %}
             <div class="card mb-3">
-                <div class="card-body">
+                <div class="card-body text-center">
                     <h5 class="card-title">{{ consumer.Last_name }} {{ consumer.First_name }} {{ consumer.Patronymic }}</h5>
                     <p class="card-text">
                         <b>Дата рождения:</b> {{ consumer.Birthday }}
@@ -20,18 +20,32 @@
                         <b>Телефон:</b> {{ consumer.Telephone_number }}
                     </p>
                 </div>
-                <div class="card-footer text-muted d-flex justify-content-between">
+                <div class="card-footer text-muted d-flex justify-content-evenly">
                     <a href="/read-more-consumer/{{ consumer.Consumer_id }}/" class="btn">Узнать больше</a>
                     <a class="dropdown">
                         <a class="btn-header dropdown-toggle btn" id="Add_Receipt"
                            data-bs-toggle="dropdown" aria-expanded="false">Добавить квитанцию</a>
                         <ul class="dropdown-menu" aria-labelledby="Add_Receipt">
                             <li><a class="dropdown-item" href="/add-common-receipt/{{ consumer.Consumer_id }}/">Общая квитанция ЖКУ</a></li>
-                            <li><a class="dropdown-item" href="/add-phone-receipt/{{ consumer.Consumer_id }}/">Квитация за телефон</a></li>
+                            <li><a class="dropdown-item" href="/add-phone-receipt/{{ consumer.Consumer_id }}/">Квитанция за телефон</a></li>
                         </ul>
                     </a>
-                    <a href="#" class="btn">Оплаченные квитанции</a>
-                    <a href="#" class="btn">Неоплаченные квитанции</a>
+                    <a class="dropdown">
+                        <a class="btn-header dropdown-toggle btn" id="Add_Receipt"
+                           data-bs-toggle="dropdown" aria-expanded="false">Оплаченные квитанции</a>
+                        <ul class="dropdown-menu" aria-labelledby="Add_Receipt">
+                            <li><a class="dropdown-item" href="/show-paid-common-receipts/{{ consumer.Consumer_id }}/">Общие квитанции ЖКУ</a></li>
+                            <li><a class="dropdown-item" href="/show-paid-phone-receipts/{{ consumer.Consumer_id }}/">Квитанции за телефон</a></li>
+                        </ul>
+                    </a>
+                    <a class="dropdown">
+                        <a class="btn-header dropdown-toggle btn" id="Add_Receipt"
+                           data-bs-toggle="dropdown" aria-expanded="false">Требуется оплата</a>
+                        <ul class="dropdown-menu" aria-labelledby="Add_Receipt">
+                            <li><a class="dropdown-item" href="/show-not-paid-common-receipts/{{ consumer.Consumer_id }}/">Общие квитанции ЖКУ</a></li>
+                            <li><a class="dropdown-item" href="/show-not-paid-phone-receipts/{{ consumer.Consumer_id }}/">Квитанции за телефон</a></li>
+                        </ul>
+                    </a>
                 </div>
             </div>
         {% endfor %}
