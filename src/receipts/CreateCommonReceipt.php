@@ -66,7 +66,7 @@ class CreateCommonReceipt extends ValidationReceiptData
         }
 
         $consumer_info = $this->database->getConnection()->query(
-            "SELECT First_name, Last_name, Consumer_email, Living_space FROM Consumer WHERE Consumer_id = {$user_id}"
+            "SELECT First_name, Last_name, Consumer_email, Living_space FROM Consumer WHERE Consumer_id = $user_id"
         )->fetch();
 
         if (count($need_to_receive) != 0){
@@ -112,6 +112,7 @@ class CreateCommonReceipt extends ValidationReceiptData
                                                         Amount_water_disposal, Amount_housing_maintenance,
                                                         Amount_overhaul, Amount_intercom,
                                                         Deadline_date, Overdue_days, 
+                                                        Tariff_amount,
                                                         Total_summ, Is_paid)
                             VALUES (:receipt_period, :consumer_id, 
                                     :electricity_charge_id, 
@@ -120,6 +121,7 @@ class CreateCommonReceipt extends ValidationReceiptData
                                     :amount_water_disposal, :amount_housing_maintenance,
                                     :amount_overhaul, :amount_intercom,
                                     :deadline_date, :overdue_days, 
+                                    :tariff_amount,
                                     :total_summ, :is_paid)"
         );
 
@@ -132,11 +134,12 @@ class CreateCommonReceipt extends ValidationReceiptData
             "gas_charge_id" =>$all_charge_ids["Gas_charge_id"],
             "heating_charge_id" => $all_charge_ids["Heating_charge_id"],
             "amount_water_disposal" => $all_tariff_amounts["Водоотведение"],
-            "amount_housing_maintenance" => $all_tariff_amounts["Взнос на кап. ремонт"],
-            "amount_overhaul" => $all_tariff_amounts["Содержание жил. помещений"],
+            "amount_housing_maintenance" => $all_tariff_amounts["Содержание жил. помещений"],
+            "amount_overhaul" => $all_tariff_amounts["Взнос на кап. ремонт"],
             "amount_intercom" => $all_tariff_amounts["Запирающее устройство"],
             "deadline_date" => $deadline_date,
             "overdue_days" => 0,
+            "tariff_amount" => array_sum($all_tariff_amounts),
             "total_summ" => array_sum($all_tariff_amounts),
             "is_paid" => 0
         ]);

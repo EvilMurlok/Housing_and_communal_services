@@ -13,17 +13,15 @@ use App\AuthorizationEntity;
 use App\AuthorizationEntityException;
 use App\CreateCommonReceipt;
 use App\CreatePhoneReceipt;
-use App\CreateReceiptException;
 use App\Database;
 use App\EditionNews;
 use App\EditionOrganization;
 use App\Session;
 
 use App\TakingReading;
-use App\TakingReadingException;
 use App\TopUpAccount;
 use App\TopUpAccountException;
-use JetBrains\PhpStorm\ArrayShape;
+
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
@@ -140,153 +138,7 @@ $add_reading = new TakingReading($database, $session);
 $add_common_receipt = new CreateCommonReceipt($database, $session);
 $add_phone_receipt = new CreatePhoneReceipt($database, $session);
 
-function renderPageByQuery($query, $session, $twig, $response, $name_render_page, $name_form = "form", $need_one = 0): ResponseInterface
-{
-    $rows = null;
-    if ($need_one == 1) {
-        $rows = $query->fetch();
-    } else {
-        $rows = $query->fetchAll();
-    }
-    $session->setData($name_form, $rows);
-    $body = $twig->render($name_render_page, [
-        "user" => $session->getData("user"),
-        "message" => $session->get_and_set_null("message"),
-        "status" => $session->flush("status"),
-        $name_form => $session->flush($name_form)
-    ]);
-    $response->getBody()->write($body);
-    return $response;
-}
-
-function renderPage($session, $twig, $response, $name_render_page, $name_form = "form"): ResponseInterface
-{
-    $body = $twig->render($name_render_page, [
-        "user" => $session->getData("user"),
-        "message" => $session->flush("message"),
-        "status" => $session->flush("status"),
-        $name_form => $session->flush($name_form)
-    ]);
-    $response->getBody()->write($body);
-    return $response;
-}
-
-function checkUserRights($session, $response, $message): bool
-{
-    if ($session->getData("user") == null or $session->getData("user")["Is_staff"] != 1) {
-        $session->setData("message", $message);
-        $session->setData("status", "danger");
-        return false;
-    }
-    return true;
-}
-
-#[ArrayShape(["types" => "string[]", "months" => "string[]", "years" => "array", "template_name" => "string"])]
-function getRequiredReadingsParameters($session) :array{
-    if ($session->getData("user")["Is_staff"] == 1){
-        $types = ["Горячее водоснабжение", "Холодное водоснабжение", "Электроэнергия", "Отопление", "Газ"];
-        $template_name = "readings/taking-reading-by-mc.twig";
-    }
-    else{
-        $types = ["Горячее водоснабжение", "Холодное водоснабжение", "Электроэнергия"];
-        $template_name = "readings/taking-readings.twig";
-    }
-    $months = ["Январь", "Февраль", "Март", "Апрель", "Май",
-        "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"];
-    $years = [];
-    for ($i = 2019; $i <= (int) date("Y"); ++$i){
-        $years[] = $i;
-    }
-    return [
-        "types" => $types,
-        "months" => $months,
-        "years" => $years,
-        "template_name" => $template_name
-    ];
-}
-
-#[ArrayShape(["types" => "string[]", "months" => "string[]", "years" => "array"])]
-function getRequiredReceiptParameters():array{
-    $types = ["Квитанция междугородний телефон", "Квитанция городской телефон"];
-    $months = ["Январь", "Февраль", "Март", "Апрель", "Май",
-        "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"];
-    $years = [];
-    for ($i = 2019; $i <= (int) date("Y"); ++$i){
-        $years[] = $i;
-    }
-    return [
-        "types" => $types,
-        "months" => $months,
-        "years" => $years
-    ];
-}
-
-function renderRequiredReceiptForm($response, $database, $twig, &$session, $template_name, $consumer_id){
-    $consumer_info = $database->getConnection()->query(
-        "SELECT Consumer_id, First_name, Last_name, Consumer_email 
-                       FROM Consumer 
-                       WHERE Consumer_id = $consumer_id"
-    )->fetch();
-    $required_parameters = getRequiredReceiptParameters();
-    $body = $twig->render($template_name, [
-        "user" => $session->getData("user"),
-        "message" => $session->flush("message"),
-        "form" => $session->flush("form"),
-        "status" => $session->flush("status"),
-        "types" => $required_parameters["types"],
-        "months" => $required_parameters["months"],
-        "years" => $required_parameters["years"],
-        "consumer_info" => $consumer_info
-    ]);
-    $response->getBody()->write($body);
-    return $response;
-}
-
-function fulfill_reading_post_request($request, &$session, $add_reading, $user_id) {
-    $params = (array) $request->getParsedBody($user_id);
-    try {
-        $add_reading->add_reading($params, $user_id);
-        $session->setData("message", "Показание за услугу: '" . $params["Reading_type"] . "' успешно внесено!");
-        $session->setData("status", "success");
-    }
-    catch (TakingReadingException $exception){
-        $session->setData("message", $exception->getMessage());
-        $session->setData("status", "danger");
-        $session->setData("form", $params);
-    }
-}
-
-function get_lists_of_consumers($database, $twig, $session, $response, $template_name): ResponseInterface
-{
-    $query = $database->getConnection()->query(
-        "SELECT Consumer_id, First_name, Last_name, Patronymic, 
-                              Consumer_email, Birthday, Telephone_number
-                       FROM Consumer c INNER JOIN Address a USING(Address_id)
-                       WHERE a.Management_company_id = {$session->getData("user")["Management_company_id"]}
-                       ORDER BY Last_name, First_name"
-    );
-    return renderPageByQuery($query, $session, $twig, $response, $template_name, "consumers");
-}
-
-function fulfill_receipts_post_request($request, &$session, $add_receipt, $user_id, $is_phone) {
-    $params = (array) $request->getParsedBody($user_id);
-    try {
-        $add_receipt->add_receipt($params, $user_id);
-        if ($is_phone == 1){
-            $session->setData("message", "Квитанция: '" . $params["Receipt_type"] . "' успешно создана!");
-        }
-        else {
-            $session->setData("message", "Квитанция: 'Общая квитанция ЖКУ' успешно создана!");
-        }
-        $session->setData("status", "success");
-    }
-    catch (CreateReceiptException $exception){
-        $session->setData("message", $exception->getMessage());
-        $session->setData("status", "danger");
-        $session->setData("form", $params);
-    }
-}
-
+require_once "/Users/macbookair/Desktop/Housing_and_communal_services/src/utils/all_functions.php";
 
 // такие callback-функции должны возвращать строго $response!
 $app->get("/",
@@ -328,7 +180,7 @@ $app->get("/view-news/{news_id}/",
 
 $app->get("/edit-news/{news_id}/",
     function (ServerRequestInterface $request, ResponseInterface $response, $args) use ($database, $session, $twig) {
-        if (!checkUserRights($session, $response, "Обычные пользователи не могут редактировать новости")) {
+        if (!checkUserRights($session, "Обычные пользователи не могут редактировать новости")) {
             return $response->withHeader("Location", "/")->withStatus(302);
         }
         $query = $database->getConnection()->query(
@@ -359,7 +211,7 @@ $app->post("/edit-news-post/{news_id}/",
 
 $app->get('/delete-news/{news_id}/',
     function (ServerRequestInterface $request, ResponseInterface $response, $args) use ($database, $session) {
-        if (!checkUserRights($session, $response, "Обычные пользователи не могут удалять новости")) {
+        if (!checkUserRights($session, "Обычные пользователи не могут удалять новости")) {
             return $response->withHeader("Location", "/")->withStatus(302);
         }
         $required_news_id = $args["news_id"];
@@ -374,7 +226,7 @@ $app->get('/delete-news/{news_id}/',
 
 $app->get("/add-news/",
     function (ServerRequestInterface $request, ResponseInterface $response) use ($twig, $session) {
-        if (!checkUserRights($session, $response, "Обычные пользователи не могут добавлять новости")) {
+        if (!checkUserRights($session, "Обычные пользователи не могут добавлять новости")) {
             return $response->withHeader("Location", "/")->withStatus(302);
         }
         return renderPage($session, $twig, $response, "addition/add-news.twig", "form_news");
@@ -466,7 +318,7 @@ $app->post("/register-consumer-post/",
 
 $app->get("/login-entity/",
     function (ServerRequestInterface $request, ResponseInterface $response) use ($twig, $session) {
-        return renderPage($session, $twig, $response, "authorization/login-entity.twig", "form");
+        return renderPage($session, $twig, $response, "authorization/login-entity.twig");
     });
 
 $app->post("/login-entity-post/",
@@ -487,7 +339,7 @@ $app->post("/login-entity-post/",
 
 $app->get("/register-entity/",
     function (ServerRequestInterface $request, ResponseInterface $response) use ($twig, $session) {
-        return renderPage($session, $twig, $response, "authorization/register-entity.twig", "form");
+        return renderPage($session, $twig, $response, "authorization/register-entity.twig");
     });
 
 $app->post("/register-entity-post/",
@@ -576,7 +428,7 @@ $app->get("/read-more-consumer/{consumer_id}/",
 
 $app->get("/add-organization/",
     function (ServerRequestInterface $request, ResponseInterface $response) use ($twig, $session) {
-        if (!checkUserRights($session, $response, "Обычные пользователи не могут добавлять организации!")) {
+        if (!checkUserRights($session, "Обычные пользователи не могут добавлять организации!")) {
             return $response->withHeader("Location", "/organization-list/")->withStatus(302);
         }
         return renderPage($session, $twig, $response,
@@ -627,7 +479,7 @@ $app->get("/view-organization/{organization_id}/",
 
 $app->get("/edit-organization/{organization_id}/",
     function (ServerRequestInterface $request, ResponseInterface $response, $args) use ($database, $session, $twig) {
-        if (!checkUserRights($session, $response, "Обычные пользователи не могут обновлять информацию об организации!")) {
+        if (!checkUserRights($session,  "Обычные пользователи не могут обновлять информацию об организации!")) {
             return $response->withHeader("Location", "/organization-list/")->withStatus(302);
         }
         $query = $database->getConnection()->query(
@@ -660,7 +512,7 @@ $app->post("/edit-organization-post/{organization_id}/",
 
 $app->get("/delete-organization/{organization_id}/",
     function (ServerRequestInterface $request, ResponseInterface $response, $args) use ($database, $session) {
-        if (!checkUserRights($session, $response, "Обычные пользователи не могут удалять информацию об организации!")) {
+        if (!checkUserRights($session, "Обычные пользователи не могут удалять информацию об организации!")) {
             return $response->withHeader("Location", "/organization-list/")->withStatus(302);
         }
         $required_organization_id = $args["organization_id"];
@@ -804,4 +656,23 @@ $app->post("/add-phone-receipt-post/{consumer_id}/",
             ->withStatus(302);
     });
 
+$app->get("/show-not-paid-common-receipts/{consumer_id}/",
+    function (ServerRequestInterface $request, ResponseInterface $response, $args) use ($database, $session, $twig) {
+        return show_receipts($request, $response, $twig, $database, $session, $args["consumer_id"], 0, 0);
+    });
+
+$app->get("/show-paid-common-receipts/{consumer_id}/",
+    function (ServerRequestInterface $request, ResponseInterface $response, $args) use ($database, $session, $twig) {
+        return show_receipts($request, $response, $twig, $database, $session, $args["consumer_id"], 0, 1);
+    });
+
+$app->get("/show-not-paid-phone-receipts/{consumer_id}/",
+    function (ServerRequestInterface $request, ResponseInterface $response, $args) use ($database, $session, $twig) {
+        return show_receipts($request, $response, $twig, $database, $session, $args["consumer_id"], 1, 0);
+    });
+
+$app->get("/show-paid-phone-receipts/{consumer_id}/",
+    function (ServerRequestInterface $request, ResponseInterface $response, $args) use ($database, $session, $twig) {
+        return show_receipts($request, $response, $twig, $database, $session, $args["consumer_id"], 1, 1);
+    });
 $app->run();
