@@ -177,46 +177,57 @@ function change_total_summ($deadline_date, $overdue_days, $total_tariff_amount):
  */
 function show_receipts($request, $response, $twig, $database, &$session, $user_id, $is_phone, $is_paid): ResponseInterface
 {
+    $consumer_info = $database->getConnection()->query(
+        "SELECT First_name, Last_name, Patronymic, Telephone_number, Living_space, City_name, Street, Housing, House, Flat
+             FROM Consumer INNER JOIN Address A on Consumer.Address_id = A.Address_id
+             WHERE Consumer_id = $user_id"
+    )->fetch();
+
+    $convert_to_english_rate = [
+        "ГВС" => "hot_water",
+        "ХВС" => "cold_water",
+        "Водоотведение" => "water_disposal",
+        "Отопление" => "heating",
+        "Электроснабжение" => "electricity",
+        "Газ" => "gas",
+        "Взнос на кап. ремонт" => "overhaul",
+        "Содержание жил. помещений" => "housing_maintenance",
+        "Запирающее устройство" => "intercom",
+        "Междугородние звонки" => "long_distance_phone",
+        "Городские звонки" => "landline_phone"
+    ];
+    $rates_info = $database->getConnection()->query(
+        "SELECT Service_name, Unit, Unit_cost FROM Rate"
+    )->fetchAll();
+
+    $all_rates_info = [];
+    foreach ($rates_info as $value){
+        $all_rates_info[$convert_to_english_rate[$value["Service_name"]]] = $value;
+    }
+
     if ($is_phone == 1) {
-        $query = $database->getConnection()->query(
-            "SELECT  ReceiptCityPhone.*, Service_name
+        $receipts_info = $database->getConnection()->query(
+            "SELECT  Receipt_id, Amount_of_minutes, Receipt_period,
+                     Tariff_amount as Total_tariff_amount, Deadline_date, 
+                     Service_name, Unit, Unit_cost,
+                     Payment_date, Overdue_days, Total_summ, Is_paid
              FROM ReceiptCityPhone
              INNER JOIN Rate USING(Rate_id)
              WHERE Consumer_id = $user_id AND Is_paid = $is_paid
              UNION
-             SELECT  ReceiptDistancePhone.*, Service_name
+             SELECT  Receipt_id, Amount_of_minutes, Receipt_period,
+                     Tariff_amount as Total_tariff_amount, Deadline_date, 
+                     Service_name, Unit, Unit_cost,
+                     Payment_date, Overdue_days, Total_summ, Is_paid
              FROM ReceiptDistancePhone
              INNER JOIN Rate USING(Rate_id)
-             WHERE Consumer_id = $user_id AND Is_paid = $is_paid
-             ORDER BY Information_entering_date"
-        );
-
-        return renderPageByQuery($query, $session, $twig, $response,
-            "receipts/show-phone-receipts.twig", "receipts");
+             WHERE Consumer_id = $user_id AND Is_paid = $is_paid"
+        )->fetchAll();
     } else {
-        $convert_to_english_rate = [
-            "ГВС" => "hot_water",
-            "ХВС" => "cold_water",
-            "Водоотведение" => "water_disposal",
-            "Отопление" => "heating",
-            "Электроснабжение" => "electricity",
-            "Газ" => "gas",
-            "Взнос на кап. ремонт" => "overhaul",
-            "Содержание жил. помещений" => "housing_maintenance",
-            "Запирающее устройство" => "intercom",
-            "Междугородние звонки" => "long_distance_phone",
-            "Городские звонки" => "landline_phone"
-        ];
-
-        $consumer_info = $database->getConnection()->query(
-            "SELECT First_name, Last_name, Patronymic, Telephone_number, Living_space, City_name, Street, Housing, House, Flat
-             FROM Consumer INNER JOIN Address A on Consumer.Address_id = A.Address_id
-             WHERE Consumer_id = $user_id"
-        )->fetch();
-
         $receipts_info = $database->getConnection()->query(
             "SELECT  Receipt_HCS_id, Receipt_period, Amount_water_disposal, Amount_housing_maintenance, Amount_overhaul, Amount_intercom, 
-		             Deadline_date, Overdue_days, rh.Tariff_amount AS Total_tariff_amount, Total_summ,
+		             Deadline_date, Overdue_days, Total_summ, Payment_date,
+                     rh.Tariff_amount AS Total_tariff_amount,
 		             ec.Amount_of_unit as electricity_unit, ec.Tariff_amount as electricity_tariff,
 		             hwс.Amount_of_unit as hot_water_unit, hwс.Tariff_amount as hot_water_tariff,
 		             cwс.Amount_of_unit as cold_water_unit, cwс.Tariff_amount as cold_water_tariff,
@@ -231,41 +242,45 @@ function show_receipts($request, $response, $twig, $database, &$session, $user_i
             INNER JOIN HeatingСharge hс USING(Heating_charge_id)
             WHERE rh.Consumer_id = $user_id and Is_paid = $is_paid"
         )->fetchAll();
+    }
 
-        if ($is_paid == 0){
-            foreach ($receipts_info as &$receipt){
+    $required_id = ["Receipt_HCS_id", "Receipt_id"];
 
-                $new_data = change_total_summ($receipt["Deadline_date"], $receipt["Overdue_days"], $receipt["Total_tariff_amount"]);
-                if ($new_data["Overdue_days"] != 0){
-                    $receipt["Overdue_days"] = $new_data["Overdue_days"];
-                    $receipt["Total_summ"] = $new_data["Total_summ"];
-                    $database->getConnection()->query(
-                        "UPDATE ReceiptHCS SET Overdue_days={$receipt['Overdue_days']},
-                                               Total_summ={$receipt['Total_summ']}
-                        WHERE Receipt_HCS_id ={$receipt['Receipt_HCS_id']}"
-                    );
-                }
+    if ($is_paid == 0){
+        foreach ($receipts_info as &$receipt){
+            if (count($receipt) >= 14){
+                $table_name = "ReceiptHCS";
+            }
+            elseif ($receipt["Service_name"] == "Городские звонки"){
+                $table_name = "ReceiptCityPhone";
+            }
+            else{
+                 $table_name = "ReceiptDistancePhone";
+            }
+            $new_data = change_total_summ($receipt["Deadline_date"], $receipt["Overdue_days"], $receipt["Total_tariff_amount"]);
+            if ($new_data["Overdue_days"] != 0){
+                $receipt["Overdue_days"] = $new_data["Overdue_days"];
+                $receipt["Total_summ"] = $new_data["Total_summ"];
+                $database->getConnection()->query(
+                    "UPDATE ". $table_name ." SET Overdue_days={$receipt["Overdue_days"]},
+                                               Total_summ={$receipt["Total_summ"]}
+                        WHERE ". $required_id[$is_phone] ."={$receipt[$required_id[$is_phone]]}"
+                );
             }
         }
-
-        $rates_info = $database->getConnection()->query(
-            "SELECT Service_name, Unit, Unit_cost FROM Rate"
-        )->fetchAll();
-
-        $all_rates_info = [];
-        foreach ($rates_info as $value){
-            $all_rates_info[$convert_to_english_rate[$value["Service_name"]]] = $value;
-        }
-
-        $body = $twig->render("receipts/show-common-receipts.twig", [
-            "user" => $session->getData("user"),
-            "message" => $session->get_and_set_null("message"),
-            "status" => $session->flush("status"),
-            "receipts" => $receipts_info,
-            "rates" => $all_rates_info,
-            "consumer_info" => $consumer_info
-        ]);
-        $response->getBody()->write($body);
-        return $response;
     }
+
+    $required_template = ["receipts/show-common-receipts.twig", "receipts/show-phone-receipts.twig"];
+    file_put_contents("logs.txt", count($receipts_info));
+    $body = $twig->render($required_template[$is_phone], [
+        "user" => $session->getData("user"),
+        "message" => $session->get_and_set_null("message"),
+        "status" => $session->flush("status"),
+        "receipts" => $receipts_info,
+        "rates" => $all_rates_info,
+        "consumer_info" => $consumer_info
+    ]);
+
+    $response->getBody()->write($body);
+    return $response;
 }

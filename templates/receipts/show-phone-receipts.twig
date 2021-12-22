@@ -1,0 +1,91 @@
+{% extends 'parts/base.twig' %}
+
+{% block title %}
+     Квитанции за телефон {{ consumer_info.First_name }} {{ consumer_info.Last_name }}
+{% endblock %}
+
+{% block content %}
+    <h1>Квитанции за телефон потребителя</h1>
+    <h2 class="mb-3">{{ consumer_info.First_name }} {{ consumer_info.Last_name }} ({{ consumer_info.Telephone_number }})</h2>
+    {%  include "parts/_message.twig" %}
+    <div id="news-list">
+        {% if receipts|length == 0 %}
+            <h4>Квитанции за телефон не найдены!</h4>
+        {% else %}
+            {% for receipt in receipts %}
+                <div class="card mb-3">
+                    <div class="card-header d-flex justify-content-between">
+                        <h5>
+                            ФИО {{ consumer_info.First_name }} {{ consumer_info.Last_name }} {{ consumer_info.Patronymic }}
+                            <br>
+                            Адрес <span>г. {{ consumer_info.City_name }}, ул. {{ consumer_info.Street }}, <br>
+                                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                                д. {{ consumer_info.House }}</span>
+                            {% if consumer_info.Housing != 0 %}
+                                <span>, корп. {{ consumer_info.Housing }}</span>
+                            {% endif %}
+                            <span>, кв. {{ consumer_info.Flat }}.</span>
+                        </h5>
+                        <h5>
+                             Квитанция '{{ receipt.Service_name }}' за период: <br>
+                            {{ receipt.Receipt_period|slice(5, 2) }} месяц {{ receipt.Receipt_period|slice(0, 4) }} год
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <table class="table table-bordered">
+                            <thead>
+                            <tr>
+                                <th scope="col">Вид платежа</th>
+                                <th scope="col">Кол-во</th>
+                                <th scope="col">Тариф</th>
+                                <th scope="col">Нач. по тарифу</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr>
+                                <th scope="row">{{ receipt.Service_name }}</th>
+                                <td>{{ receipt.Amount_of_minutes }} {{ receipt.Unit }}</td>
+                                <td>{{ receipt.Unit_cost }}</td>
+                                <td>{{ receipt.Total_tariff_amount }}</td>
+                            </tr>
+                            <tr>
+                                <th scope="row">ВСЕГО</th>
+                                <td></td>
+                                <td></td>
+                                <td>{{ receipt.Total_tariff_amount }}</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="card-body d-flex justify-content-between mt-0">
+                        {% if receipt.Is_paid == 0 %}
+                            <h5>
+                                По тарифам сумма к оплате: {{ receipt.Total_tariff_amount }} <br>
+                                ИТОГО: {{ receipt.Total_summ }}
+                            </h5>
+                            <h5>
+                                Оплатить до: {{ receipt.Deadline_date }} <br>
+                                Дней просрочки: {{ receipt.Overdue_days }}
+                            </h5>
+                        {% else %}
+                            <h5>
+                                По тарифам сумма к оплате: {{ receipt.Total_tariff_amount }} <br>
+                                ИТОГО ОПЛАЧЕНО: {{ receipt.Total_summ }}
+                            </h5>
+                            <h5>
+                                Надо было оплатить до: {{ receipt.Deadline_date }} <br>
+                                Дата оплаты: {{ receipt.Payment_date }} <br>
+                                Дней просрочки: {{ receipt.Overdue_days }}
+                            </h5>
+                        {% endif %}
+                    </div>
+                    {% if user.Is_staff == 0 %}
+                        <div class="card-footer text-muted">
+                                <a href="/pay-receipt/{{ receipt.Receipt_id }}/" class="btn">Оплатить квитанцию</a>
+                        </div>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        {% endif %}
+    </div>
+{% endblock %}
