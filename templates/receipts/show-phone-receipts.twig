@@ -81,7 +81,7 @@
                     </div>
                     {% if user.Is_staff == 0 %}
                         <div class="card-footer text-muted">
-                                <a href="/pay-receipt/{{ receipt.Receipt_id }}/" class="btn">Оплатить квитанцию</a>
+                                <a href="/pay-receipt/{{ receipt.Table_name }}/{{ receipt.Receipt_id }}/" class="btn">Оплатить квитанцию</a>
                         </div>
                     {% endif %}
                 </div>

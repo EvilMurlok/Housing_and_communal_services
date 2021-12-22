@@ -1,0 +1,36 @@
+{% extends 'parts/base.twig' %}
+
+{% block title %}
+    Оплата квитанции
+{% endblock %}
+
+{% block content %}
+    <h1 class="mb-3">Оплата квитанции '{{ receipt.Receipt_name }}'</h1>
+    {% include 'parts/_message.twig' %}
+    <form method="post" action="/pay-receipt-post/{{ receipt.Table_name }}/{{ receipt.Receipt_id }}/">
+        <h5 class="mb-1 text-center">Период, за который составлена квитанция</h5>
+        <div class="d-flex justify-content-evenly text-center">
+            <div>
+                <p class="mb-1">Месяц</p>
+                <input class="form-control mb-5" name="Receipt_type" type="text" value="{{ receipt.Receipt_period|slice(5, 2) }}" aria-label="Receipt_type" disabled readonly>
+            </div>
+            <div>
+                <p class="mb-1">Год</p>
+                <input class="form-control mb-5" name="Receipt_type" type="text" value="{{ receipt.Receipt_period|slice(0, 4) }}" aria-label="Receipt_type" disabled readonly>
+            </div>
+        </div>
+        <div class="card-body d-flex justify-content-between">
+            <h5>
+                По тарифам сумма к оплате: {{ receipt.Tariff_amount }} <br>
+                ИТОГО: {{ receipt.Total_summ }}
+            </h5>
+            <h5>
+                Оплатить до: {{ receipt.Deadline_date }} <br>
+                Дней просрочки: {{ receipt.Overdue_days }}
+            </h5>
+        </div>
+        <h6 class="mb-2">Наименование квитанции</h6>
+        <input class="form-control mb-5" name="Receipt_type" type="text" value="{{ receipt.Receipt_name }}" aria-label="Receipt_type" disabled readonly>
+        <button type="submit" class="btn">Оплатить квитанцию</button>
+    </form>
+{% endblock %}

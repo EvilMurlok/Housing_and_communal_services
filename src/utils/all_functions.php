@@ -161,15 +161,37 @@ function change_total_summ($deadline_date, $overdue_days, $total_tariff_amount):
 {
     $new_total_summ = $total_tariff_amount;
     $new_overdue_days = $overdue_days;
-    if ($deadline_date < date('Y-m-d', strtotime($deadline_date. ' + 40 days'))){
+    if ($deadline_date < date('Y-m-d'/*, strtotime($deadline_date. ' + 40 days')*/)){
         $new_overdue_days = date_diff(new DateTime($deadline_date),
-            new DateTime(date('Y-m-d', strtotime($deadline_date. ' + 40 days'))))->days;
+            new DateTime(date('Y-m-d'/*, strtotime($deadline_date. ' + 40 days')*/)))->days;
         $new_total_summ = ($new_overdue_days * 0.001 + 1) * $total_tariff_amount;
+    }
+    else{
+        $new_overdue_days = 0;
     }
     return [
         "Overdue_days" => $new_overdue_days,
         "Total_summ" => $new_total_summ
     ];
+}
+
+function top_up_account($request, $response, $database, &$session, $twig){
+    $choices = ["Общий счет ЖКУ", "Городской телефон", "Междугородний телефон"];
+    $all_accounts = $database->getConnection()->query("
+            SELECT Personal_acc_hcs, Personal_acc_landline_ph, Personal_acc_long_dist_ph 
+            FROM Consumer
+            WHERE Telephone_number = '" . $session->getData('user')['Telephone_number'] . "'"
+    )->fetch();
+    $body = $twig->render("account/top-up-an-account.twig", [
+        "user" => $session->getData("user"),
+        "message" => $session->flush("message"),
+        "form" => $session->flush("form"),
+        "status" => $session->flush("status"),
+        "choices" => $choices,
+        "accounts" => $all_accounts
+    ]);
+    $response->getBody()->write($body);
+    return $response;
 }
 
 /**
@@ -225,7 +247,7 @@ function show_receipts($request, $response, $twig, $database, &$session, $user_i
         )->fetchAll();
     } else {
         $receipts_info = $database->getConnection()->query(
-            "SELECT  Receipt_HCS_id, Receipt_period, Amount_water_disposal, Amount_housing_maintenance, Amount_overhaul, Amount_intercom, 
+            "SELECT  Receipt_id, Receipt_period, Amount_water_disposal, Amount_housing_maintenance, Amount_overhaul, Amount_intercom, 
 		             Deadline_date, Overdue_days, Total_summ, Payment_date,
                      rh.Tariff_amount AS Total_tariff_amount,
 		             ec.Amount_of_unit as electricity_unit, ec.Tariff_amount as electricity_tariff,
@@ -244,34 +266,33 @@ function show_receipts($request, $response, $twig, $database, &$session, $user_i
         )->fetchAll();
     }
 
-    $required_id = ["Receipt_HCS_id", "Receipt_id"];
-
-    if ($is_paid == 0){
-        foreach ($receipts_info as &$receipt){
-            if (count($receipt) >= 14){
-                $table_name = "ReceiptHCS";
-            }
-            elseif ($receipt["Service_name"] == "Городские звонки"){
-                $table_name = "ReceiptCityPhone";
-            }
-            else{
-                 $table_name = "ReceiptDistancePhone";
-            }
+    foreach ($receipts_info as &$receipt){
+        if (count($receipt) >= 14){
+            $table_name = "ReceiptHCS";
+        }
+        elseif ($receipt["Service_name"] == "Городские звонки"){
+            $table_name = "ReceiptCityPhone";
+        }
+        else{
+            $table_name = "ReceiptDistancePhone";
+        }
+        if ($is_paid == 0){
             $new_data = change_total_summ($receipt["Deadline_date"], $receipt["Overdue_days"], $receipt["Total_tariff_amount"]);
-            if ($new_data["Overdue_days"] != 0){
+            if ($new_data["Overdue_days"] != $receipt["Overdue_days"]){
                 $receipt["Overdue_days"] = $new_data["Overdue_days"];
                 $receipt["Total_summ"] = $new_data["Total_summ"];
                 $database->getConnection()->query(
                     "UPDATE ". $table_name ." SET Overdue_days={$receipt["Overdue_days"]},
                                                Total_summ={$receipt["Total_summ"]}
-                        WHERE ". $required_id[$is_phone] ."={$receipt[$required_id[$is_phone]]}"
+                        WHERE Receipt_id = {$receipt["Receipt_id"]}"
                 );
             }
         }
+        $receipt["Table_name"] = $table_name;
     }
 
+
     $required_template = ["receipts/show-common-receipts.twig", "receipts/show-phone-receipts.twig"];
-    file_put_contents("logs.txt", count($receipts_info));
     $body = $twig->render($required_template[$is_phone], [
         "user" => $session->getData("user"),
         "message" => $session->get_and_set_null("message"),
@@ -281,6 +302,48 @@ function show_receipts($request, $response, $twig, $database, &$session, $user_i
         "consumer_info" => $consumer_info
     ]);
 
+    $response->getBody()->write($body);
+    return $response;
+}
+
+/**
+ * @throws Exception
+ */
+function show_payment_page($request, $response, $twig, $database, &$session, $receipt_id, $table_name){
+    $table_name_to_russian = [
+        "ReceiptHCS" => "Общая квитанция ЖКУ",
+        "ReceiptCityPhone" => "Квитанция городской телефон",
+        "ReceiptDistancePhone" => "Квитанция междугородний телефон"
+    ];
+
+    $receipt_info = $database->getConnection()->query(
+        "SELECT Receipt_id, Consumer_id, Receipt_period, Deadline_date, Overdue_days, Total_summ, Tariff_amount, Is_paid
+         FROM ". $table_name
+        ." WHERE Receipt_id = $receipt_id"
+    )->fetch();
+
+    $required_template = [
+        "ReceiptHCS" => 0,
+        "ReceiptCityPhone" => 1,
+        "ReceiptDistancePhone" => 1
+    ];
+
+    if ($receipt_info["Is_paid"] == 1){
+        $session->setData("message", "Данная квитанция уже была оплачена!");
+        $session->setData("status", "danger");
+        return show_receipts($request, $response, $twig, $database,
+            $session, $receipt_info["Consumer_id"], $required_template[$table_name], 0);
+    }
+
+    $receipt_info["Receipt_name"] = $table_name_to_russian[$table_name];
+    $receipt_info["Table_name"] = $table_name;
+
+    $body = $twig->render("receipts/pay-the-receipt.twig", [
+        "user" => $session->getData("user"),
+        "message" => $session->get_and_set_null("message"),
+        "status" => $session->flush("status"),
+        "receipt" => $receipt_info
+    ]);
     $response->getBody()->write($body);
     return $response;
 }

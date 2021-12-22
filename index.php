@@ -16,6 +16,8 @@ use App\CreatePhoneReceipt;
 use App\Database;
 use App\EditionNews;
 use App\EditionOrganization;
+use App\ReceiptPayment;
+use App\ReceiptPaymentException;
 use App\Session;
 
 use App\TakingReading;
@@ -50,6 +52,8 @@ require_once "/Users/macbookair/Desktop/Housing_and_communal_services/src/readin
 require_once "/Users/macbookair/Desktop/Housing_and_communal_services/src/receipts/CreateCommonReceipt.php";
 require_once "/Users/macbookair/Desktop/Housing_and_communal_services/src/receipts/CreatePhoneReceipt.php";
 require_once "/Users/macbookair/Desktop/Housing_and_communal_services/src/receipts/CreateReceiptException.php";
+require_once "/Users/macbookair/Desktop/Housing_and_communal_services/src/receipts/ReceiptPayment.php";
+require_once "/Users/macbookair/Desktop/Housing_and_communal_services/src/receipts/ReceiptPaymentException.php";
 
 
 $config = include_once "/Users/macbookair/Desktop/Housing_and_communal_services/config/databaseInfo.php";
@@ -137,6 +141,9 @@ $add_reading = new TakingReading($database, $session);
 // creation_receipts block
 $add_common_receipt = new CreateCommonReceipt($database, $session);
 $add_phone_receipt = new CreatePhoneReceipt($database, $session);
+
+// receipt payment block
+$receipt_payment = new ReceiptPayment($database);
 
 require_once "/Users/macbookair/Desktop/Housing_and_communal_services/src/utils/all_functions.php";
 
@@ -527,22 +534,7 @@ $app->get("/delete-organization/{organization_id}/",
 
 $app->get("/top-up-an-account/",
     function (ServerRequestInterface $request, ResponseInterface $response) use ($database, $session, $twig){
-        $choices = ["Общий счет ЖКУ", "Городской телефон", "Междугородний телефон"];
-        $all_accounts = $database->getConnection()->query("
-            SELECT Personal_acc_hcs, Personal_acc_landline_ph, Personal_acc_long_dist_ph 
-            FROM Consumer
-            WHERE Telephone_number = '" . $session->getData('user')['Telephone_number'] . "'"
-        )->fetch();
-        $body = $twig->render("account/top-up-an-account.twig", [
-            "user" => $session->getData("user"),
-            "message" => $session->flush("message"),
-            "form" => $session->flush("form"),
-            "status" => $session->flush("status"),
-            "choices" => $choices,
-            "accounts" => $all_accounts
-        ]);
-        $response->getBody()->write($body);
-        return $response;
+        return top_up_account($request, $response, $database, $session, $twig);
     });
 
 $app->post("/top-up-an-account-post/",
@@ -675,4 +667,36 @@ $app->get("/show-paid-phone-receipts/{consumer_id}/",
     function (ServerRequestInterface $request, ResponseInterface $response, $args) use ($database, $session, $twig) {
         return show_receipts($request, $response, $twig, $database, $session, $args["consumer_id"], 1, 1);
     });
+
+$app->get("/pay-receipt/{table_name}/{receipt_id}/",
+    function(ServerRequestInterface $request, ResponseInterface $response, $args) use ($database, $session, $twig){
+        return show_payment_page($request, $response, $twig, $database, $session, $args["receipt_id"], $args["table_name"]);
+    });
+
+$app->post("/pay-receipt-post/{table_name}/{receipt_id}/",
+    function(ServerRequestInterface $request, ResponseInterface $response, $args) use ($database, $twig, $session, $receipt_payment){
+        $required_template = [
+            "ReceiptHCS" => ["Общая квитанция ЖКУ", 0],
+            "ReceiptCityPhone" => ["Квитанция городской телефон", 1],
+            "ReceiptDistancePhone" => ["Квитанция междугородний телефон", 1]
+        ];
+        $consumer_id = $database->getConnection()->query(
+            "SELECT Consumer_id
+                       FROM ". $args["table_name"]
+                       ." WHERE Receipt_id = {$args['receipt_id']}"
+        )->fetch();
+        try {
+            $receipt_payment->pay_for_receipt($args["table_name"], $args["receipt_id"]);
+            $session->setData("message", "Квитанция: '" . $required_template[$args["table_name"]][0] . "' успешно оплачена!");
+            $session->setData("status", "success");
+            return show_receipts($request, $response, $twig, $database,
+                $session, $consumer_id["Consumer_id"], $required_template[$args["table_name"]][1], 0);
+        }
+        catch (ReceiptPaymentException $exception){
+            $session->setData("message", $exception->getMessage());
+            $session->setData("status", "danger");
+        }
+        return top_up_account($request, $response, $database, $session, $twig);
+    });
+
 $app->run();
