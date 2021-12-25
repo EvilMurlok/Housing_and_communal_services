@@ -278,10 +278,8 @@ class AuthorizationConsumer{
                                WHERE Telephone_number='".$email_or_phone."'");
             }
             setcookie("password_cookie_token", $password_cookie_token, time() + 1000 * 60 * 60 * 24 * 30, "/");
-            file_put_contents("logs.txt", $_COOKIE["password_cookie_token"]);
         }
         else{
-           // file_put_contents("logs.txt", $_COOKIE["password_cookie_token"]);
             if(isset($_COOKIE["password_cookie_token"])){
                 if (str_contains($email_or_phone, "@")){
                     $this->database->getConnection()->query(

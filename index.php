@@ -71,9 +71,6 @@ $session = new Session();
 $sessionMiddleware = function (ServerRequestInterface $request, RequestHandlerInterface $handler) use ($session, $database) {
     $session->start();
     if(isset($_COOKIE["password_cookie_token"]) && !empty($_COOKIE["password_cookie_token"])){
-        var_dump(
-            "WE ARE HERE!"
-        );
         $query = $database->getConnection()->query(
             "SELECT *
                            FROM Consumer
@@ -93,13 +90,13 @@ $sessionMiddleware = function (ServerRequestInterface $request, RequestHandlerIn
             ]);
         }
     }
-//    $session_timeout = 1200; // in seconds
+//    $session_timeout = 120; // in seconds
 //    if (!isset($_SESSION['last_visit'])) {
 //        $_SESSION['last_visit'] = time();
 //    }
 //    if((!isset($_COOKIE["password_cookie_token"]) || empty($_COOKIE["password_cookie_token"]))
 //        && isset($_SESSION['user'])
-//        && ((time() - $_SESSION['last_visit']) > $session_timeout))
+//        && ((time() - $_SАESSION['last_visit']) > $session_timeout))
 //    {
 //        unset($_SESSION['last_visit']);
 //        unset($_SESSION);

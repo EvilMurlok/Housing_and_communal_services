@@ -3,6 +3,7 @@
 namespace App;
 
 use JetBrains\PhpStorm\Pure;
+use PDOException;
 
 require_once "/Users/macbookair/Desktop/Housing_and_communal_services/src/readings/ValidationReadingData.php";
 
@@ -75,28 +76,43 @@ class TakingReading extends ValidationReadingData {
             "SELECT Management_company_id FROM Consumer INNER JOIN Address A on Consumer.Address_id = A.Address_id
                        WHERE Consumer_id = ". $user_id
         )->fetch()["Management_company_id"];
-
-        $statement = $this->database->getConnection()->prepare(
-            "INSERT INTO ". $type_of_reading ." (Amount_of_unit, Charge_period, 
-                                                        Information_entering_date, Is_consumer, 
-                                                        Consumer_id, Management_company_id, 
-                                                        Rate_id, Tariff_amount)
-                            VALUES (:amount_of_unit, :charge_period, 
-                                    :information_entering_date, :is_consumer, 
-                                    :consumer_id, :management_company_id, 
-                                    :rate_id, :tariff_amount)"
+        $this->database->getConnection()->query(
+            "SET SESSION TRANSACTION ISOLATION LEVEL SERIALIZABLE;"
         );
-        $statement->execute([
-            "amount_of_unit" => $data["Consumer_reading"],
-            "charge_period" => $period_of_reading,
-            "information_entering_date" => date("Y-m-d"),
-            "is_consumer" => $is_consumer,
-            "consumer_id" => $user_id,
-            "management_company_id" => $mc_id,
-            "rate_id" => $rate_info["Rate_id"],
-            "tariff_amount" => $rate_info["Unit_cost"] * $data["Consumer_reading"]
-        ]);
-
+        try {
+            $this->database->getConnection()->query(
+                "START TRANSACTION;"
+            );
+            $statement = $this->database->getConnection()->prepare(
+                "INSERT INTO " . $type_of_reading . " (Amount_of_unit, Charge_period, 
+                                                            Information_entering_date, Is_consumer, 
+                                                            Consumer_id, Management_company_id, 
+                                                            Rate_id, Tariff_amount)
+                                VALUES (:amount_of_unit, :charge_period, 
+                                        :information_entering_date, :is_consumer, 
+                                        :consumer_id, :management_company_id, 
+                                        :rate_id, :tariff_amount)"
+            );
+            $statement->execute([
+                "amount_of_unit" => $data["Consumer_reading"],
+                "charge_period" => $period_of_reading,
+                "information_entering_date" => date("Y-m-d"),
+                "is_consumer" => $is_consumer,
+                "consumer_id" => $user_id,
+                "management_company_id" => $mc_id,
+                "rate_id" => $rate_info["Rate_id"],
+                "tariff_amount" => $rate_info["Unit_cost"] * $data["Consumer_reading"]
+            ]);
+            if ($this->session->getData("user")["Is_staff"] == 0) {
+                sleep(30);
+            }
+            $this->database->getConnection()->query(
+                "COMMIT;"
+            );
+        }
+        catch (PDOException) {
+                throw new TakingReadingException("Показание уже было добавлено!");
+        }
         return true;
     }
 }

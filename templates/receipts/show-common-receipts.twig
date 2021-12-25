@@ -141,7 +141,7 @@
                             </h5>
                         {% endif %}
                     </div>
-                    {% if user.Is_staff == 0 %}
+                    {% if user.Is_staff == 0 and receipt.Is_paid == 0 %}
                         <div class="card-footer text-muted">
                             <a href="/pay-receipt/{{ receipt.Table_name }}/{{ receipt.Receipt_id }}/" class="btn">Оплатить квитанцию</a>
                         </div>

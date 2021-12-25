@@ -34,8 +34,8 @@ class ValidationAccountData{
         if (empty($data["Amount_of_money"])){
             throw new TopUpAccountException("Поле введенной суммы не должно быть пустым!");
         }
-        if ($data["Amount_of_money"] <= 0 or $data["Amount_of_money"] > 5000){
-            throw new TopUpAccountException("Введенная сумма не должна быть отрицательной или превышать 5000 ₽!");
+        if ($data["Amount_of_money"] <= 0 or $data["Amount_of_money"] > 10000){
+            throw new TopUpAccountException("Введенная сумма не должна быть отрицательной или превышать 10000 ₽!");
         }
         return $data;
     }
