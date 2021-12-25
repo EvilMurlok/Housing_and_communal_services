@@ -299,7 +299,8 @@ function show_receipts($request, $response, $twig, $database, &$session, $user_i
         "status" => $session->flush("status"),
         "receipts" => $receipts_info,
         "rates" => $all_rates_info,
-        "consumer_info" => $consumer_info
+        "consumer_info" => $consumer_info,
+        "is_paid" => $is_paid
     ]);
 
     $response->getBody()->write($body);

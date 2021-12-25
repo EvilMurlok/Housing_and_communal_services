@@ -4,8 +4,10 @@
     </a>
     <div class="header-link-block">
         <a class="header-link  btn-header" href="/">Новости</a>
-        <span class="header-link">|</span>
-        <a class="header-link  btn-header" href="/contacts/">Контакты</a>
+        {% if user is not null and user.Is_staff == 0 %}
+            <span class="header-link">|</span>
+            <a class="header-link  btn-header" href="/contacts/{{ user.Consumer_id }}/">Контакты УК</a>
+        {% endif %}
     </div>
     <div class="person-page-link-block">
         {% if user is not null %}

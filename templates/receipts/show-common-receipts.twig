@@ -5,7 +5,11 @@
 {% endblock %}
 
 {% block content %}
-    <h1>Общие квитанции ЖКУ потребителя</h1>
+    {% if is_paid == 1 %}
+        <h1>Оплаченные общие квитанции ЖКУ потребителя</h1>
+    {% else %}
+        <h1>Неоплаченные общие квитанции ЖКУ потребителя</h1>
+    {% endif %}
     <h2 class="mb-3">{{ consumer_info.First_name }} {{ consumer_info.Last_name }} ({{ consumer_info.Telephone_number }})</h2>
     {%  include "parts/_message.twig" %}
     <div id="news-list">

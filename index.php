@@ -106,8 +106,8 @@ $sessionMiddleware = function (ServerRequestInterface $request, RequestHandlerIn
 //    $_SESSION['last_visit'] = time();
     $response = $handler->handle($request);
     $session->save();
-    var_dump($_SESSION);
-    var_dump($_COOKIE);
+//    var_dump($_SESSION);
+//    var_dump($_COOKIE);
     return $response;
 };
 
@@ -155,6 +155,20 @@ $app->get("/",
         );
         return renderPageByQuery($query, $session, $twig, $response,
             "index.twig", "form_news");
+    });
+
+$app->get("/contacts/{consumer_id}/",
+    function(ServerRequestInterface $request, ResponseInterface $response, $args) use ($twig, $session, $database){
+        $query = $database->getConnection()->query(
+            "SELECT mc.Company_name, mc.Full_name_boss, 
+                              mc.Company_email, mc.Company_link,
+                              mc.Telephone_number, mc.Address FROM Consumer c
+                                           INNER JOIN Address a USING(Address_id)
+                                           INNER JOIN ManagementCompany mc USING(Management_company_id)
+                       WHERE c.Consumer_id = {$args['consumer_id']}"
+        );
+        return renderPageByQuery($query, $session, $twig, $response,
+            "info/contacts.twig", "contact_form", 1);
     });
 
 $app->get("/rates/",
@@ -390,7 +404,8 @@ $app->get("/view-consumer/{consumer_id}/",
     function (ServerRequestInterface $request, ResponseInterface $response, $args) use ($database, $twig, $session) {
         $query = $database->getConnection()->query(
             "SELECT C.First_name, C.Last_name, C.Patronymic, C.Birthday, C.Telephone_number, C.Consumer_email,
-                              C.Passport_series, C.Passport_number, C.Flat, 
+                              C.Passport_series, C.Passport_number, C.Flat, C.Personal_acc_hcs, C.Personal_acc_landline_ph, 
+                              C.Personal_acc_long_dist_ph,
                               A.City_name, A.Street, A.House, A.Housing, MC.Company_name, MC.Address, MC.Full_name_boss,
                               MC.Company_email, MC.Telephone_number
                        FROM Consumer AS C 

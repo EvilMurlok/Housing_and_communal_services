@@ -104,7 +104,7 @@ class TakingReading extends ValidationReadingData {
                 "tariff_amount" => $rate_info["Unit_cost"] * $data["Consumer_reading"]
             ]);
             if ($this->session->getData("user")["Is_staff"] == 0) {
-                sleep(30);
+                sleep(3);
             }
             $this->database->getConnection()->query(
                 "COMMIT;"

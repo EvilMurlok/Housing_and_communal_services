@@ -45,7 +45,8 @@ class ReceiptPayment{
                        WHERE Receipt_id = $receipt_id"
         );
         $this->database->getConnection()->query(
-            "UPDATE Consumer SET ". $required_account ."=". $required_consumer_account
+            "UPDATE Consumer SET ". $required_account ." = ". $required_consumer_account ." 
+                       WHERE Consumer_id = {$receipt_info['Consumer_id']}"
         );
         return true;
     }
