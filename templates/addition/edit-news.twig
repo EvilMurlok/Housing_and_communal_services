@@ -10,14 +10,14 @@
     <form method="post" action="/edit-news-post/{{ form_news.News_id }}/">
         <div class="mb-3">
             <label for="Title" class="form-label">Название новости</label>
-            <input type="text" name="Title" class="form-control" id="Title" value="{{ form_news ? form_news.Title }}">
+            <input type="text" name="Title" class="form-control" id="Title" value="{{ form_news ? form_news.Title }}" required>
         </div>
         <div class="mb-3">
             <label for="Content" class="form-label">Содержимое новости</label>
-            <input type="text" name="Content" class="form-control" id="Content" value="{{ form_news.Content }}">
+            <input type="text" name="Content" class="form-control" id="Content" value="{{ form_news.Content }}" required>
         </div>
         <div class="form-check mb-3">
-            <input class="form-check-input" type="checkbox" value="" id="Is_published" checked>
+            <input class="form-check-input" name="Is_published" type="checkbox" value="on" id="Is_published">
             <label class="form-check-label" for="Is_published">
                 Опубликовано
             </label>

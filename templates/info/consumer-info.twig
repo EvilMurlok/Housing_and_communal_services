@@ -1,7 +1,7 @@
 {% extends 'parts/base.twig' %}
 
 {% block title %}
-    {{ user.First_name }} {{ user.Last_name }}
+    {{ consumer_info.First_name }} {{ consumer_info.Last_name }}
 {% endblock %}
 
 {% block content %}
@@ -11,7 +11,7 @@
         <tr>
             <td>ФИО:</td>
             <td>
-                <span>{{ user.First_name }} {{ user.Last_name }} {{ consumer_info.Patronymic }}</span>
+                <span>{{ consumer_info.Last_name }} {{ consumer_info.First_name }} {{ consumer_info.Patronymic }}</span>
             </td>
         </tr>
         <tr>
@@ -23,13 +23,13 @@
         <tr>
             <td>Телефон:</td>
             <td>
-                <span>{{ user.Telephone_number }}</span>
+                <span>{{ consumer_info.Telephone_number }}</span>
             </td>
         </tr>
         <tr>
             <td>Адрес электронной почты:</td>
             <td>
-                <span>{{ user.Consumer_email }}</span>
+                <span>{{ consumer_info.Consumer_email }}</span>
             </td>
         </tr>
         <tr>

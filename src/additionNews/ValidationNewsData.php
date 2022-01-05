@@ -15,7 +15,7 @@ class ValidationNewsData {
     /**
      * @throws AdditionNewsException
      */
-    public function validate_data(&$data, $edit_news_id=0):array{
+    public function validate_data(&$data, $edit_news_id=0):void{
         // title block
         if (empty($data["Title"])) {
             throw new AdditionNewsException("Название новости не может быть пустым!");
@@ -36,7 +36,6 @@ class ValidationNewsData {
         if (empty($data["Content"])) {
             throw new AdditionNewsException("Содержание новости не может быть пустым!");
         }
-
         // Is_published block
         if (isset($data["Is_published"]) && $data["Is_published"] == "on"){
             $data["Is_published"] = 1;
@@ -44,6 +43,5 @@ class ValidationNewsData {
         else{
             $data["Is_published"] = 0;
         }
-        return $data;
     }
 }

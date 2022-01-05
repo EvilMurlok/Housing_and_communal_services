@@ -10,11 +10,11 @@
     <form method="post" action="/add-news-post/">
         <div class="mb-3">
             <label for="Title" class="form-label">Название новости</label>
-            <input type="text" name="Title" class="form-control" id="Title" value="{{ form_news ? form_news.Title }}">
+            <input type="text" name="Title" class="form-control" id="Title" value="{{ form_news ? form_news.Title }}" required>
         </div>
         <div class="mb-3">
             <label for="Content" class="form-label">Содержимое новости</label>
-            <textarea class="form-control" id="Content" rows="5" name="Content"></textarea>
+            <textarea class="form-control" id="Content" rows="5" name="Content" required></textarea>
         </div>
         <div class="mb-3 form-check">
             <input type="checkbox" class="form-check-input" id="Is_published" name="Is_published">

@@ -27,7 +27,7 @@
                                 $("#rate-list").append(
                                     "<div class=\"card mb-3\"><div class=\"card-body\">" +
                                     "<h5 class=\"card-title\">" + data.Service_name +"</h5>" +
-                                    "<p class=\"card-text\"> <b>Тариф:</b> " + data.Unit_cost + " " + data.Unit +
+                                    "<p class=\"card-text\"> <b>Тариф:</b> " + data.Unit_cost + " ₽ за  " + data.Unit +
                                     "<br> <b>Ресурсоснабжающая организация:</b> " + data.Organization_name + "<br>" +
                                     "<b>Телефон организации:</b> " + data.Telephone_number + "<br>" +
                                     "<b>Email организации:</b> " + data.Organization_email + "</p></div>" +
@@ -56,7 +56,7 @@
                 <div class="card-body">
                     <h5 class="card-title">{{ rate.Service_name }}</h5>
                     <p class="card-text">
-                        <b>Тариф:</b> {{ rate.Unit_cost }} {{ rate.Unit }}
+                        <b>Тариф:</b> {{ rate.Unit_cost }} ₽ за {{ rate.Unit }}
                         <br>
                         <b>Ресурсоснабжающая организация:</b> {{ rate.Organization_name }}
                         <br>

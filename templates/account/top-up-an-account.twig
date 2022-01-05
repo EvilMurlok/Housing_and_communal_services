@@ -37,16 +37,16 @@
     </table>
     <form method="post" action="/top-up-an-account-post/">
         <div class="mb-3">
-            <label for="Consumer_phone_email" class="form-label">Ваш мобильный телефон, который вы указали на
+            <label for="Consumer_phone" class="form-label">Ваш мобильный телефон, который вы указали на
                 сайте</label>
             <input type="text" name="Consumer_phone" class="form-control" id="Consumer_phone"
-                   aria-describedby="Consumer_phone" value="{{ form ? form.Consumer_phone }}">
+                   aria-describedby="Consumer_phone" value="{{ form ? form.Consumer_phone }}" required>
             <div id="Consumer_phone" class="form-text">Формат: 89997776655</div>
         </div>
         <div class="mb-3">
             <label for="Amount_of_money" class="form-label">Вносимая сумма</label>
             <input type="text" name="Amount_of_money" class="form-control" id="Amount_of_money"
-                   aria-describedby="Amount_of_money">
+                   aria-describedby="Amount_of_money" required>
             <div id="Amount_of_money" class="form-text">Вы можете внести не больше 10000 ₽</div>
         </div>
         <select class="form-select mb-3" name="Account_type" aria-label="Account_type">
@@ -54,6 +54,12 @@
                 <option value="{{ choice }}">{{ choice }}</option>
             {% endfor %}
         </select>
+        <div class="form-check mb-3">
+            <input class="form-check-input" name="block" type="checkbox" value="on" id="block">
+            <label class="form-check-label" for="block">
+                Блокировка
+            </label>
+        </div>
         <button type="submit" class="btn">Пополнить</button>
     </form>
 {% endblock %}

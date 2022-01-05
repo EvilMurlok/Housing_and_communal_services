@@ -10,12 +10,12 @@
     <form method="post" action="/login-entity-post/">
         <div class="mb-3">
             <label for="Company_phone_email" class="form-label">Телефон или Email</label>
-            <input type="text" name="Company_phone_email" class="form-control" id="Company_phone_email" aria-describedby="phoneEmailHelp" arvalue="{{ form ? form.CompanyPhoneEmail }}">
+            <input type="text" name="Company_phone_email" class="form-control" id="Company_phone_email" aria-describedby="phoneEmailHelp" arvalue="{{ form ? form.CompanyPhoneEmail }}" required>
             <div id="phoneEmailHelp" class="form-text">Формат: 89997776655 или user@domain.ru(com)</div>
         </div>
         <div class="mb-3">
             <label for="Company_password" class="form-label">Пароль</label>
-            <input type="password" name="Company_password" class="form-control" id="Company_password">
+            <input type="password" name="Company_password" class="form-control" id="Company_password" required>
         </div>
         <button type="submit" class="btn btn-success">Войти</button>
     </form>

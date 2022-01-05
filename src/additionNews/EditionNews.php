@@ -19,7 +19,7 @@ class EditionNews extends ValidationNewsData {
     public function edit_news(array $data, $required_news_id): bool
     {
         try{
-            $data = $this->validate_data($data, $required_news_id);
+            $this->validate_data($data, $required_news_id);
         }
         catch (AdditionNewsException $exception){
             throw new AdditionNewsException($exception->getMessage());
@@ -35,7 +35,7 @@ class EditionNews extends ValidationNewsData {
             'required_news_id' => $required_news_id
 
         ]);
+
         return true;
     }
-
 }

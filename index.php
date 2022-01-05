@@ -16,6 +16,7 @@ use App\CreatePhoneReceipt;
 use App\Database;
 use App\EditionNews;
 use App\EditionOrganization;
+use App\EditReading;
 use App\ReceiptPayment;
 use App\ReceiptPaymentException;
 use App\Session;
@@ -90,20 +91,20 @@ $sessionMiddleware = function (ServerRequestInterface $request, RequestHandlerIn
             ]);
         }
     }
-//    $session_timeout = 120; // in seconds
-//    if (!isset($_SESSION['last_visit'])) {
-//        $_SESSION['last_visit'] = time();
-//    }
-//    if((!isset($_COOKIE["password_cookie_token"]) || empty($_COOKIE["password_cookie_token"]))
-//        && isset($_SESSION['user'])
-//        && ((time() - $_SАESSION['last_visit']) > $session_timeout))
-//    {
-//        unset($_SESSION['last_visit']);
-//        unset($_SESSION);
-//        header("Location: /logout/");
-//        exit;
-//    }
-//    $_SESSION['last_visit'] = time();
+    $session_timeout = 120; // in seconds
+    if (!isset($_SESSION['last_visit'])) {
+        $_SESSION['last_visit'] = time();
+    }
+    if((!isset($_COOKIE["password_cookie_token"]) || empty($_COOKIE["password_cookie_token"]))
+        && isset($_SESSION['user'])
+        && ((time() - $_SESSION['last_visit']) > $session_timeout))
+    {
+        unset($_SESSION['last_visit']);
+        unset($_SESSION['user']);
+        header("Location: /logout/");
+        exit;
+    }
+    $_SESSION['last_visit'] = time();
     $response = $handler->handle($request);
     $session->save();
 //    var_dump($_SESSION);
@@ -134,6 +135,7 @@ $top_up_account = new TopUpAccount($database, $session);
 
 // taking_reading block
 $add_reading = new TakingReading($database, $session);
+//$edit_reading = new EditReading($database, $session);
 
 // creation_receipts block
 $add_common_receipt = new CreateCommonReceipt($database, $session);
@@ -159,6 +161,12 @@ $app->get("/",
 
 $app->get("/contacts/{consumer_id}/",
     function(ServerRequestInterface $request, ResponseInterface $response, $args) use ($twig, $session, $database){
+        if (!checkGuestRights($session, "Незарегистрированные пользователи не могут просматривать запрошенную страницу!")) {
+            return $response->withHeader("Location", "/")->withStatus(302);
+        }
+        if (checkAvailableRecords($database, "Consumer", "Consumer_id", $args['consumer_id']) == false){
+            return notfoundPageRedirection($session, $response);
+        }
         $query = $database->getConnection()->query(
             "SELECT mc.Company_name, mc.Full_name_boss, 
                               mc.Company_email, mc.Company_link,
@@ -188,18 +196,33 @@ $app->get("/rates/",
 
 $app->get("/view-news/{news_id}/",
     function (ServerRequestInterface $request, ResponseInterface $response, $args) use ($database, $session, $twig) {
-        $query = $database->getConnection()->query(
-            "SELECT News_id, Title, Content, Is_published, Created_at FROM News
+        if (checkAvailableRecords($database, "News", "News_id", $args['news_id']) == false){
+            notfoundPageRedirection($session, $response);
+        }
+        else{
+            $news_info = $database->getConnection()->query(
+                "SELECT News_id, Title, Content, Is_published, Created_at FROM News
                    WHERE News_id = {$args['news_id']}"
-        );
-        return renderPageByQuery($query, $session, $twig, $response,
-            "info/view-news.twig", "form_news", 1);
+            )->fetch();
+            $session->setData("form_news", $news_info);
+            $body = $twig->render("info/view-news.twig", [
+                "user" => $session->getData("user"),
+                "message" => $session->get_and_set_null("message"),
+                "status" => $session->flush("status"),
+                "form_news" => $session->flush("form_news")
+            ]);
+        }
+        $response->getBody()->write($body);
+        return $response;
     });
 
 $app->get("/edit-news/{news_id}/",
     function (ServerRequestInterface $request, ResponseInterface $response, $args) use ($database, $session, $twig) {
         if (!checkUserRights($session, "Обычные пользователи не могут редактировать новости")) {
             return $response->withHeader("Location", "/")->withStatus(302);
+        }
+        if (checkAvailableRecords($database, "News", "News_id", $args['news_id']) == false){
+            notfoundPageRedirection($session, $response);
         }
         $query = $database->getConnection()->query(
             "SELECT News_id, Title, Content, Is_published, Created_at FROM News
@@ -213,7 +236,7 @@ $app->post("/edit-news-post/{news_id}/",
     function (ServerRequestInterface $request, ResponseInterface $response, $args) use ($edit_news, $session) {
         $params = (array)$request->getParsedBody(); // вернет все параметры, переданные через POST
         try {
-            $edit_news->edit_news($params, $args["news_id"]);
+            $edit_news->edit_news($params, $args["news_id"], );
             $session->setData("message", "Новость успешно отредактирована!");
             $session->setData("status", "success");
         } catch (AdditionNewsException $exception) {
@@ -229,13 +252,25 @@ $app->post("/edit-news-post/{news_id}/",
 
 $app->get('/delete-news/{news_id}/',
     function (ServerRequestInterface $request, ResponseInterface $response, $args) use ($database, $session) {
-        if (!checkUserRights($session, "Обычные пользователи не могут удалять новости")) {
+        if (!checkUserRights($session, "Обычные пользователи не могут удалять новости!")) {
             return $response->withHeader("Location", "/")->withStatus(302);
         }
+        if (checkAvailableRecords($database, "News", "News_id", $args['news_id']) == false){
+            return notfoundPageRedirection($session, $response);
+        }
+        $params = $request->getQueryParams();
+        if ($params["block"] == "on"){
+            $database->getConnection()->query("LOCK TABLES News WRITE;");
+        }
+        sleep(10);
         $required_news_id = $args["news_id"];
         $database->getConnection()->query(
             "DELETE FROM News WHERE News_id = $required_news_id"
         );
+
+        if ($params["block"] == "on")  {
+            $database->getConnection()->query("UNLOCK TABLES;");
+        }
         $session->setData("message", "Новость успешно удалена!");
         $session->setData("status", "success");
         return $response->withHeader("Location", "/")
@@ -402,6 +437,12 @@ $app->get("/contacts/",
 // тут запросы к нескольким таблицам!
 $app->get("/view-consumer/{consumer_id}/",
     function (ServerRequestInterface $request, ResponseInterface $response, $args) use ($database, $twig, $session) {
+        if (!checkGuestRights($session, "Незарегистрированные пользователи не могут просматривать запрошенную страницу!")) {
+            return $response->withHeader("Location", "/")->withStatus(302);
+        }
+        if (checkAvailableRecords($database, "Consumer", "Consumer_id", $args['consumer_id']) == false){
+            return notfoundPageRedirection($session, $response);
+        }
         $query = $database->getConnection()->query(
             "SELECT C.First_name, C.Last_name, C.Patronymic, C.Birthday, C.Telephone_number, C.Consumer_email,
                               C.Passport_series, C.Passport_number, C.Flat, C.Personal_acc_hcs, C.Personal_acc_landline_ph, 
@@ -419,6 +460,9 @@ $app->get("/view-consumer/{consumer_id}/",
 
 $app->get("/consumer-list/",
     function (ServerRequestInterface $request, ResponseInterface $response) use ($database, $session, $twig) {
+        if (!checkUserRights($session, "Пользователи без особых прав не могут просматривать список потребителей!")) {
+            return $response->withHeader("Location", "/")->withStatus(302);
+        }
         $query = $database->getConnection()->query(
             "SELECT Consumer_id, First_name, Last_name, Patronymic, 
                               Consumer_email, Birthday, Telephone_number
@@ -431,6 +475,12 @@ $app->get("/consumer-list/",
 
 $app->get("/read-more-consumer/{consumer_id}/",
     function (ServerRequestInterface $request, ResponseInterface $response, $args) use ($database, $twig, $session) {
+        if (!checkUserRights($session, "Пользователи без особых прав не могут просматривать запрошенную страницу!")) {
+            return $response->withHeader("Location", "/")->withStatus(302);
+        }
+        if (checkAvailableRecords($database, "Consumer", "Consumer_id", $args['consumer_id']) == false){
+            return notfoundPageRedirection($session, $response);
+        }
         $query = $database->getConnection()->query(
             "SELECT C.First_name, C.Last_name, C.Patronymic,
                               C.Consumer_email, C.Birthday, C.Telephone_number,
@@ -486,6 +536,10 @@ $app->get("/organization-list/",
 
 $app->get("/view-organization/{organization_id}/",
     function (ServerRequestInterface $request, ResponseInterface $response, $args) use ($database, $session, $twig) {
+        if (checkAvailableRecords($database, "ResourceOrganization",
+                "Resource_organization_id", $args["organization_id"]) == false){
+            return notfoundPageRedirection($session, $response);
+        }
         $query = $database->getConnection()->query(
             "SELECT Resource_organization_id, Organization_name, Telephone_number, Organization_email, 
                               Organization_link, Bank_details, Address 
@@ -500,6 +554,10 @@ $app->get("/edit-organization/{organization_id}/",
     function (ServerRequestInterface $request, ResponseInterface $response, $args) use ($database, $session, $twig) {
         if (!checkUserRights($session,  "Обычные пользователи не могут обновлять информацию об организации!")) {
             return $response->withHeader("Location", "/organization-list/")->withStatus(302);
+        }
+        if (checkAvailableRecords($database, "ResourceOrganization",
+                "Resource_organization_id", $args["organization_id"]) == false){
+            return notfoundPageRedirection($session, $response);
         }
         $query = $database->getConnection()->query(
             "SELECT Resource_organization_id, Organization_name, Telephone_number, Organization_email, 
@@ -534,6 +592,10 @@ $app->get("/delete-organization/{organization_id}/",
         if (!checkUserRights($session, "Обычные пользователи не могут удалять информацию об организации!")) {
             return $response->withHeader("Location", "/organization-list/")->withStatus(302);
         }
+        if (checkAvailableRecords($database, "ResourceOrganization",
+                "Resource_organization_id", $args["organization_id"]) == false){
+            return notfoundPageRedirection($session, $response);
+        }
         $required_organization_id = $args["organization_id"];
         $database->getConnection()->query(
             "DELETE FROM ResourceOrganization WHERE Resource_organization_id = $required_organization_id"
@@ -546,6 +608,9 @@ $app->get("/delete-organization/{organization_id}/",
 
 $app->get("/top-up-an-account/",
     function (ServerRequestInterface $request, ResponseInterface $response) use ($database, $session, $twig){
+        if (!checkGuestRights($session, "Незарегистрированные пользователи не могут просматривать запрошенную страницу!")) {
+            return $response->withHeader("Location", "/")->withStatus(302);
+        }
         return top_up_account($request, $response, $database, $session, $twig);
     });
 
@@ -553,7 +618,7 @@ $app->post("/top-up-an-account-post/",
     function(ServerRequestInterface $request, ResponseInterface $response) use ($database, $session, $top_up_account){
         $params = (array)$request->getParsedBody();
         try {
-            $top_up_account->top_up_account($params, $session->getData("user")["Telephone_number"]);
+            $top_up_account->top_up_account($params, $session->getData("user")["Telephone_number"], $params["block"]);
             $session->setData("message", "Счет: '" . $params["Account_type"] . "' успешно пополнен!");
             $session->setData("status", "success");
         }
@@ -566,9 +631,33 @@ $app->post("/top-up-an-account-post/",
             ->withStatus(302);
     });
 
+$app->get("/show-readings/{consumer_id}/",
+    function(ServerRequestInterface $request, ResponseInterface $response, $args) use ($database, $session, $twig){
+        if (!checkGuestRights($session, "Незарегистрированные пользователи не могут просматривать запрошенную страницу!")) {
+            return $response->withHeader("Location", "/")->withStatus(302);
+        }
+        if (checkAvailableRecords($database, "Consumer",
+                "Consumer_id", $args["consumer_id"]) == false){
+            return notfoundPageRedirection($session, $response);
+        }
+        $all_info = show_consumer_readings($database, $args["consumer_id"], $session);
+        $body = $twig->render("readings/show-readings.twig",[
+            "user" => $session->getData("user"),
+            "message" => $session->flush("message"),
+            "form" => $session->flush("form"),
+            "status" => $session->flush("status"),
+            "readings" => $all_info[1],
+            "consumer_info" => $all_info[0]
+        ]);
+        $response->getBody()->write($body);
+        return $response;
+    });
 
 $app->get("/add-reading/",
     function (ServerRequestInterface $request, ResponseInterface $response) use ($database, $session, $twig){
+        if (!checkGuestRights($session, "Незарегистрированные пользователи не могут просматривать запрошенную страницу!")) {
+            return $response->withHeader("Location", "/")->withStatus(302);
+        }
         $required_parameters = getRequiredReadingsParameters($session);
         $body = $twig->render($required_parameters["template_name"], [
             "user" => $session->getData("user"),
@@ -585,6 +674,13 @@ $app->get("/add-reading/",
 
 $app->get("/add-reading/{consumer_id}/",
     function (ServerRequestInterface $request, ResponseInterface $response, $args) use ($database, $session, $twig){
+        if (!checkUserRights($session, "Пользователи без особых прав не могут вносить за других показания!")) {
+            return $response->withHeader("Location", "/organization-list/")->withStatus(302);
+        }
+        if (checkAvailableRecords($database, "Consumer",
+                "Consumer_id", $args["consumer_id"]) == false){
+            return notfoundPageRedirection($session, $response);
+        }
         $consumer_info = $database->getConnection()->query(
             "SELECT Consumer_id, First_name, Last_name, Consumer_email 
                        FROM Consumer 
@@ -623,6 +719,9 @@ $app->post("/add-readings-post/{consumer_id}/",
 
 $app->get("/list-consumers-of-management-company/",
     function (ServerRequestInterface $request, ResponseInterface $response) use ($database, $session, $twig){
+        if (!checkUserRights($session, "Обычные пользователи не могут просматривать запрошенную страницу!")) {
+            return $response->withHeader("Location", "/")->withStatus(302);
+        }
         return get_lists_of_consumers($database, $twig, $session, $response,
             "readings/consumers-of-management-company.twig");
 
@@ -630,18 +729,35 @@ $app->get("/list-consumers-of-management-company/",
 
 $app->get("/consumers-list-of-management-company/",
     function (ServerRequestInterface $request, ResponseInterface $response) use ($database, $session, $twig){
+        if (!checkUserRights($session, "Обычные пользователи не могут просматривать запрошенную страницу!")) {
+            return $response->withHeader("Location", "/")->withStatus(302);
+        }
         return get_lists_of_consumers($database, $twig, $session, $response,
             "receipts/consumers-list-of-management-company.twig");
     });
 
 $app->get("/add-common-receipt/{consumer_id}/",
     function (ServerRequestInterface $request, ResponseInterface $response, $args) use ($database, $session, $twig){
+        if (!checkUserRights($session, "Обычные пользователи не могут просматривать запрошенную страницу!")) {
+            return $response->withHeader("Location", "/")->withStatus(302);
+        }
+        if (checkAvailableRecords($database, "Consumer",
+                "Consumer_id", $args["consumer_id"]) == false){
+            return notfoundPageRedirection($session, $response);
+        }
         return renderRequiredReceiptForm($response, $database, $twig, $session,
             "receipts/add-common-receipt.twig", $args["consumer_id"]);
     });
 
 $app->get("/add-phone-receipt/{consumer_id}/",
     function (ServerRequestInterface $request, ResponseInterface $response, $args) use ($database, $session, $twig){
+        if (!checkUserRights($session, "Обычные пользователи не могут просматривать запрошенную страницу!")) {
+            return $response->withHeader("Location", "/")->withStatus(302);
+        }
+        if (checkAvailableRecords($database, "Consumer",
+                "Consumer_id", $args["consumer_id"]) == false){
+            return notfoundPageRedirection($session, $response);
+        }
         return renderRequiredReceiptForm($response, $database, $twig, $session,
             "receipts/add-phone-receipt.twig", $args["consumer_id"]);
     });
@@ -662,26 +778,62 @@ $app->post("/add-phone-receipt-post/{consumer_id}/",
 
 $app->get("/show-not-paid-common-receipts/{consumer_id}/",
     function (ServerRequestInterface $request, ResponseInterface $response, $args) use ($database, $session, $twig) {
+        if (!checkGuestRights($session, "Незарегистрированные пользователи не могут просматривать запрошенную страницу!")) {
+            return $response->withHeader("Location", "/")->withStatus(302);
+        }
+        if (checkAvailableRecords($database, "Consumer",
+                "Consumer_id", $args["consumer_id"]) == false){
+            return notfoundPageRedirection($session, $response);
+        }
         return show_receipts($request, $response, $twig, $database, $session, $args["consumer_id"], 0, 0);
     });
 
 $app->get("/show-paid-common-receipts/{consumer_id}/",
     function (ServerRequestInterface $request, ResponseInterface $response, $args) use ($database, $session, $twig) {
+        if (!checkGuestRights($session, "Незарегистрированные пользователи не могут просматривать данную страницу!")) {
+            return $response->withHeader("Location", "/")->withStatus(302);
+        }
+        if (checkAvailableRecords($database, "Consumer",
+                "Consumer_id", $args["consumer_id"]) == false){
+            return notfoundPageRedirection($session, $response);
+        }
         return show_receipts($request, $response, $twig, $database, $session, $args["consumer_id"], 0, 1);
     });
 
 $app->get("/show-not-paid-phone-receipts/{consumer_id}/",
     function (ServerRequestInterface $request, ResponseInterface $response, $args) use ($database, $session, $twig) {
+        if (!checkGuestRights($session, "Незарегистрированные пользователи не могут просматривать данную страницу!")) {
+            return $response->withHeader("Location", "/")->withStatus(302);
+        }
+        if (checkAvailableRecords($database, "Consumer",
+                "Consumer_id", $args["consumer_id"]) == false){
+            return notfoundPageRedirection($session, $response);
+        }
         return show_receipts($request, $response, $twig, $database, $session, $args["consumer_id"], 1, 0);
     });
 
 $app->get("/show-paid-phone-receipts/{consumer_id}/",
     function (ServerRequestInterface $request, ResponseInterface $response, $args) use ($database, $session, $twig) {
+        if (!checkGuestRights($session, "Незарегистрированные пользователи не могут просматривать данную страницу!")) {
+            return $response->withHeader("Location", "/")->withStatus(302);
+        }
+        if (checkAvailableRecords($database, "Consumer",
+                "Consumer_id", $args["consumer_id"]) == false){
+            return notfoundPageRedirection($session, $response);
+        }
         return show_receipts($request, $response, $twig, $database, $session, $args["consumer_id"], 1, 1);
     });
 
 $app->get("/pay-receipt/{table_name}/{receipt_id}/",
     function(ServerRequestInterface $request, ResponseInterface $response, $args) use ($database, $session, $twig){
+        if (!checkGuestRights($session, "Незарегистрированные пользователи не могут просматривать данную страницу!")) {
+            return $response->withHeader("Location", "/")->withStatus(302);
+        }
+        $availableTableName = ["ReceiptHCS", "ReceiptCityPhone", "ReceiptDistancePhone"];
+        if (in_array($args["table_name"], $availableTableName) == false or checkAvailableRecords($database, $args["table_name"],
+                "Receipt_id", $args["receipt_id"]) == false){
+            return notfoundPageRedirection($session, $response);
+        }
         return show_payment_page($request, $response, $twig, $database, $session, $args["receipt_id"], $args["table_name"]);
     });
 

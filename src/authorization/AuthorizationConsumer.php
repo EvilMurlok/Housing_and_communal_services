@@ -68,13 +68,10 @@ class AuthorizationConsumer{
         if (empty($data["Birthday"])){
             throw new AuthorizationConsumerException("Дата рождения не может быть пустой!");
         }
-        $date_arr = explode("-", $data["Birthday"]);
+        $date_arr = explode(".", $data["Birthday"]);
         $date_arr = array_reverse($date_arr);
         $date_to_fill = implode("-", $date_arr);
-//        if ((int)$date_to_fill[1] > 12 or (int)$date_to_fill[1] < 1 or (int)$date_to_fill[2] < 1 or (int)$date_to_fill[2] > 31){
-//
-//            throw new AuthorizationConsumerException("Неверно введен день или месяц!");
-//        }
+
         $required_date = new DateTime($date_to_fill);
         $today = new DateTime("now");
         if ($required_date > $today){

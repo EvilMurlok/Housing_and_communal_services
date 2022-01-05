@@ -35,7 +35,7 @@ class ReceiptPayment{
         if ($required_consumer_account < $receipt_info["Total_summ"]){
             $difference = $receipt_info['Total_summ'] - $required_consumer_account;
             throw new ReceiptPaymentException("На счёте ". $this->convert_to_account[$table_name][1] .
-                " не хватает {$difference} ₽ для оплаты квитанции!");
+                " не хватает $difference ₽ для оплаты квитанции!");
         }
         $required_consumer_account -= $receipt_info["Total_summ"];
         $this->database->getConnection()->query(

@@ -19,7 +19,7 @@ class AdditionNews extends ValidationNewsData
     public function add_news(array $data): bool
     {
         try{
-            $data = $this->validate_data($data);
+            $this->validate_data($data);
         }
         catch (AdditionNewsException $exception){
             throw new AdditionNewsException($exception->getMessage());

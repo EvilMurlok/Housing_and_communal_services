@@ -24,7 +24,7 @@ function renderPageByQuery($query, $session, $twig, $response, $name_render_page
     return $response;
 }
 
-function renderPage($session, $twig, $response, $name_render_page, $name_form = "form"): ResponseInterface
+function renderPage($session, $twig, ResponseInterface $response, $name_render_page, $name_form = "form"): ResponseInterface
 {
     $body = $twig->render($name_render_page, [
         "user" => $session->getData("user"),
@@ -44,6 +44,35 @@ function checkUserRights($session, $message): bool
         return false;
     }
     return true;
+}
+
+function checkGuestRights($session, $message): bool
+{
+    if ($session->getData("user") == null) {
+        $session->setData("message", $message);
+        $session->setData("status", "danger");
+        return false;
+    }
+    return true;
+}
+
+function checkAvailableRecords($database, $table_name, $name_id, $required_id): bool
+{
+    $all_ids = $database->getConnection()->query(
+        "SELECT $name_id FROM $table_name WHERE $name_id = $required_id"
+    )->fetch();
+    if (gettype($all_ids) == "boolean"){
+        return false;
+    }
+    return true;
+}
+
+function notfoundPageRedirection(&$session, ResponseInterface $response): ResponseInterface
+{
+    $session->setData("message", "Такой страницы не существует!");
+    $session->setData("status", "danger");
+    return $response->withHeader("Location", "/")
+        ->withStatus(302);
 }
 
 #[ArrayShape(["types" => "string[]", "months" => "string[]", "years" => "array", "template_name" => "string"])]
@@ -87,7 +116,7 @@ function getRequiredReceiptParameters(): array
     ];
 }
 
-function renderRequiredReceiptForm($response, $database, $twig, &$session, $template_name, $consumer_id)
+function renderRequiredReceiptForm(ResponseInterface $response, $database, $twig, &$session, $template_name, $consumer_id): ResponseInterface
 {
     $consumer_info = $database->getConnection()->query(
         "SELECT Consumer_id, First_name, Last_name, Consumer_email 
@@ -109,7 +138,7 @@ function renderRequiredReceiptForm($response, $database, $twig, &$session, $temp
     return $response;
 }
 
-function fulfill_reading_post_request($request, &$session, $add_reading, $user_id)
+function fulfill_reading_post_request($request, &$session, $add_reading, $user_id): void
 {
     $params = (array)$request->getParsedBody($user_id);
     try {
@@ -135,7 +164,7 @@ function get_lists_of_consumers($database, $twig, $session, $response, $template
     return renderPageByQuery($query, $session, $twig, $response, $template_name, "consumers");
 }
 
-function fulfill_receipts_post_request($request, &$session, $add_receipt, $user_id, $is_phone)
+function fulfill_receipts_post_request($request, &$session, $add_receipt, $user_id, $is_phone): void
 {
     $params = (array)$request->getParsedBody($user_id);
     try {
@@ -175,7 +204,8 @@ function change_total_summ($deadline_date, $overdue_days, $total_tariff_amount):
     ];
 }
 
-function top_up_account($request, $response, $database, &$session, $twig){
+function top_up_account($request, ResponseInterface $response, $database, &$session, $twig): ResponseInterface
+{
     $choices = ["Общий счет ЖКУ", "Городской телефон", "Междугородний телефон"];
     $all_accounts = $database->getConnection()->query("
             SELECT Personal_acc_hcs, Personal_acc_landline_ph, Personal_acc_long_dist_ph 
@@ -347,4 +377,26 @@ function show_payment_page($request, $response, $twig, $database, &$session, $re
     ]);
     $response->getBody()->write($body);
     return $response;
+}
+
+function show_consumer_readings($database, $consumer_id, $session): array{
+    $all_info = [];
+    $all_info[] = $database->getConnection()->query(
+        "SELECT First_name, Last_name, Consumer_email FROM Consumer
+         WHERE Consumer_id = $consumer_id"
+    )->fetch();
+    $all_info[] = $database->getConnection()->query(
+       "SELECT Hot_water_charge_id AS Charge_id, Amount_of_unit, Charge_period, Information_entering_date, Tariff_amount, Service_name, Unit
+        FROM HotWaterСharge hwс INNER JOIN Rate R ON hwс.Rate_id = R.Rate_id
+        WHERE Consumer_id = $consumer_id and Is_consumer = 1
+        UNION 
+        SELECT Cold_water_charge_id AS Charge_id, Amount_of_unit, Charge_period, Information_entering_date, Tariff_amount, Service_name, Unit 
+        FROM ColdWaterСharge cwс INNER JOIN Rate R2 ON cwс.Rate_id = R2.Rate_id
+        WHERE Consumer_id = $consumer_id and Is_consumer = 1
+        UNION
+        SELECT Electricity_charge_id AS Charge_id, Amount_of_unit, Charge_period, Information_entering_date, Tariff_amount, Service_name, Unit
+        FROM ElectricityСharge eс INNER JOIN Rate R3 ON eс.Rate_id = R3.Rate_id
+        WHERE Consumer_id = $consumer_id and Is_consumer = 1;"
+    )->fetchAll();
+    return $all_info;
 }

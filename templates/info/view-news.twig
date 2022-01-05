@@ -15,9 +15,18 @@
         </div>
         {% if user is not null and user.Is_staff == 1 %}
             <div class="d-flex justify-content-evenly mt-3 mb-3">
-                <a href="/edit-news/{{ form_news.News_id }}/" class="btn">Редактировать</a>
-                <a href="/delete-news/{{ form_news.News_id }}/" class="btn btn-delete">Удалить новость</a>
+                <form action="/delete-news/{{ form_news.News_id }}/">
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" name="block" type="checkbox" value="on" id="block">
+                        <label class="form-check-label" for="block">
+                            Блокировка
+                        </label>
+                    </div>
+                    <button type="submit" class="btn btn-delete">Удалить</button>
+                </form>
             </div>
+            <a href="/edit-news/{{ form_news.News_id }}/" class="btn">Редактировать новость</a>
+{#              <a href="/delete-news/{{ form_news.News_id }}/" class="btn btn-delete">Удалить новость</a> #}
         {% endif %}
     </div>
 {% endblock %}

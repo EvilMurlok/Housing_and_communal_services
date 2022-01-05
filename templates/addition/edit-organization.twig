@@ -10,12 +10,12 @@
     <form method="post" action="/edit-organization-post/{{ form_org.Resource_organization_id }}/">
         <div class="mb-3">
             <label for="Organization_name" class="form-label">Наименование РО {{ form_org.Organization_name }}</label>
-            <input type="text" name="Organization_name" class="form-control" id="Organization_name" value="{{ form_org ? form_org.Organization_name }}">
+            <input type="text" name="Organization_name" class="form-control" id="Organization_name" value="{{ form_org ? form_org.Organization_name }}" required>
         </div>
         <div class="mb-3">
             <label for="Telephone_number" class="form-label">Телефон организации</label>
             <input type="text" name="Telephone_number"
-                   class="form-control" id="Telephone_number" aria-describedby="phoneHelp" value="{{ form_org ? form_org.Telephone_number }}">
+                   class="form-control" id="Telephone_number" aria-describedby="phoneHelp" value="{{ form_org ? form_org.Telephone_number }}" required>
             <div id="phoneHelp" class="form-text">Формат: 89997776655</div>
         </div>
         <div class="mb-3">
@@ -30,12 +30,12 @@
         </div>
         <div class="mb-3">
             <label for="Address" class="form-label">Адрес главного офиса</label>
-            <input type="text" name="Address" class="form-control" id="Address" aria-describedby="addressHelp" value="{{ form_org ? form_org.Address }}">
+            <input type="text" name="Address" class="form-control" id="Address" aria-describedby="addressHelp" value="{{ form_org ? form_org.Address }}" required>
             <div id="addressHelp" class="form-text">Пример формата: г. Сказочный, ул. Волшебная, д. 1, корп. 1, кв. 210</div>
         </div>
         <div class="mb-3">
             <label for="Bank_details" class="form-label">Банковские реквизиты организации</label>
-            <input type="text" name="Bank_details" class="form-control" id="Bank_details" value="{{ form_org ? form_org.Bank_details }}">
+            <input type="text" name="Bank_details" class="form-control" id="Bank_details" value="{{ form_org ? form_org.Bank_details }}" required>
         </div>
         <button type="submit" class="btn">Обновить информацию организацию</button>
     </form>

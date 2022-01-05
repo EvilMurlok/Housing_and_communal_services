@@ -10,63 +10,64 @@
     <form method="post" action="/register-consumer-post/">
         <div class="mb-3">
             <label for="First_name" class="form-label">Имя</label>
-            <input type="text" name="First_name" class="form-control" id="First_name" value="{{ form ? form.First_name }}">
+            <input type="text" name="First_name" class="form-control" id="First_name" value="{{ form ? form.First_name }}" required>
         </div>
         <div class="mb-3">
             <label for="Last_name" class="form-label">Фамилия</label>
-            <input type="text" name="Last_name" class="form-control" id="Last_name" value="{{ form ? form.Last_name }}">
+            <input type="text" name="Last_name" class="form-control" id="Last_name" value="{{ form ? form.Last_name }}" required>
         </div>
         <div class="mb-3">
             <label for="Patronymic" class="form-label">Отчество</label>
-            <input type="text" name="Patronymic" class="form-control" id="Patronymic" value="{{ form ? form.Patronymic }}">
+            <input type="text" name="Patronymic" class="form-control" id="Patronymic" value="{{ form ? form.Patronymic }}" required>
         </div>
         <div class="mb-3">
             <label for="Consumer_email" class="form-label">Email</label>
-            <input type="email" name="Consumer_email" class="form-control" id="Consumer_email" value="{{ form ? form.Consumer_email }}">
+            <input type="email" name="Consumer_email" class="form-control" id="Consumer_email" value="{{ form ? form.Consumer_email }}" required>
         </div>
         <div class="mb-3">
             <label for="Consumer_password" class="form-label">Пароль</label>
-            <input type="password" name="Consumer_password" class="form-control" id="Consumer_password">
+            <input type="password" name="Consumer_password" class="form-control" id="Consumer_password" required>
         </div>
         <div class="mb-3">
             <label for="confirm_password" class="form-label">Повторите пароль</label>
-            <input type="password" name="confirm_password" class="form-control" id="confirm_password">
+            <input type="password" name="confirm_password" class="form-control" id="confirm_password" required>
         </div>
         <div class="mb-3">
             <label for="Birthday" class="form-label">Дата рождения</label>
-            <input type="text" name="Birthday" class="form-control" id="Birthday" value="{{ form ? form.Birthday }}">
+            <input type="date" name="Birthday" class="form-control" id="Birthday" aria-describedby="birthdayHelp" value="{{ form ? form.Birthday }}" required>
+            <div id="birthdayHelp" class="form-text">Формат: 31.12.2000</div>
         </div>
         <div class="mb-3">
             <label for="Telephone_number" class="form-label">Мобильный телефон</label>
-            <input type="text" name="Telephone_number" class="form-control" id="Telephone_number" aria-describedby="phoneHelp" value="{{ form ? form.Telephone_number }}">
+            <input type="text" name="Telephone_number" class="form-control" id="Telephone_number" aria-describedby="phoneHelp" value="{{ form ? form.Telephone_number }}" required>
             <div id="phoneHelp" class="form-text">Формат: 89997776655</div>
         </div>
         <div class="d-flex justify-content-evenly">
             <span class="mb-3">
                 <label for="Passport_series" class="form-label mb-0">Серия паспорта</label>
-                <input type="text" name="Passport_series" class="form-control" id="Passport_series" aria-describedby="passportHelp" value="{{ form ? form.Passport_series }}">
+                <input type="text" name="Passport_series" class="form-control" id="Passport_series" aria-describedby="passportHelp" value="{{ form ? form.Passport_series }}" required>
                 <span id="passportHelp" class="form-text">Пример: 4515</span>
             </span>
             <span class="mb-3">
                 <label for="Passport_number" class="form-label mb-0">Номер паспорта</label>
-                <input type="text" name="Passport_number" class="form-control" id="Passport_number" aria-describedby="passportHelp" value="{{ form ? form.Passport_number }}">
+                <input type="text" name="Passport_number" class="form-control" id="Passport_number" aria-describedby="passportHelp" value="{{ form ? form.Passport_number }}" required>
                 <span id="passportHelp" class="form-text">Пример: 666777</span>
             </span>
         </div>
         <div class="d-flex justify-content-between">
             <span class="mb-3">
                 <label for="City_name" class="form-label mb-0">Город проживания</label>
-                <input type="text" name="City_name" class="form-control" id="City_name" aria-describedby="cityHelp" value="{{ form ? form.City_name }}">
+                <input type="text" name="City_name" class="form-control" id="City_name" aria-describedby="cityHelp" value="{{ form ? form.City_name }}" required>
                 <span id="cityHelp" class="form-text">Пример: Москва</span>
             </span>
             <span class="mb-3">
                 <label for="Street" class="form-label mb-0">Улица</label>
-                <input type="text" name="Street" class="form-control" id="Street" aria-describedby="cityHelp" value="{{ form ? form.Street }}">
+                <input type="text" name="Street" class="form-control" id="Street" aria-describedby="cityHelp" value="{{ form ? form.Street }}" required>
                 <span id="cityHelp" class="form-text">Пример: Саянская</span>
             </span>
             <span class="mb-3">
                 <label for="House" class="form-label mb-0">Дом</label>
-                <input type="text" name="House" class="form-control" id="House" aria-describedby="houseHelp" value="{{ form ? form.House }}">
+                <input type="text" name="House" class="form-control" id="House" aria-describedby="houseHelp" value="{{ form ? form.House }}" required>
                 <span id="houseHelp" class="form-text">Пример: 12</span>
             </span>
         </div>
@@ -78,12 +79,12 @@
             </span>
             <span class="mb-3">
                 <label for="Flat" class="form-label mb-0">Квартира</label>
-                <input type="text" name="Flat" class="form-control" id="Flat" aria-describedby="flatHelp" value="{{ form ? form.Flat }}">
+                <input type="text" name="Flat" class="form-control" id="Flat" aria-describedby="flatHelp" value="{{ form ? form.Flat }}" required>
                 <span id="flatHelp" class="form-text">Пример: 45</span>
             </span>
             <span class="mb-3">
                 <label for="Living_space" class="form-label mb-0">Жилая общая площадь</label>
-                <input type="text" name="Living_space" class="form-control" id="Living_space" aria-describedby="livingSpaceHelp" value="{{ form ? form.Living_space }}">
+                <input type="text" name="Living_space" class="form-control" id="Living_space" aria-describedby="livingSpaceHelp" value="{{ form ? form.Living_space }}" required>
                 <span id="livingSpaceHelp" class="form-text">Пример: 36.3</span>
             </span>
         </div>

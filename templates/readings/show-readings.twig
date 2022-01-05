@@ -1,0 +1,37 @@
+{% extends 'parts/base.twig' %}
+
+{% block title %}
+    Список показаний
+{% endblock %}
+
+{% block content %}
+    <h2 class="mb-3">Список показаний пользователя {{ consumer_info.First_name }}
+        {{ consumer_info.Last_name }} ({{ consumer_info.Consumer_email }})</h2>
+    {% include 'parts/_message.twig' %}
+    <div id="organization-list">
+        {% for reading in readings %}
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">Показание за услугу: {{ reading.Service_name }}</h5>
+                    <div class="d-flex justify-content-between">
+                        <p class="card-text">
+                            <b>Внесено:</b> {{ reading.Amount_of_unit }} {{ reading.Unit }}
+                            <br>
+                            <b>Общая стоимость услуги:</b> {{ reading.Tariff_amount }}
+                        </p>
+                        <p class="card-text">
+                            <b>Период:</b> {{ reading.Charge_period|slice(5, 2) }} месяц {{ reading.Charge_period|slice(0, 4) }} год
+                            <br>
+                            <b>Показание добавлено:</b> {{ reading.Information_entering_date }}
+                        </p>
+                    </div>
+                </div>
+                {#
+                <div class="card-footer text-muted">
+                    <a href="/edit-reading/{{ reading.Service_name }}/{{ reading.Charge_id }}/" class="btn">Редактировать показание</a>
+                </div>
+                #}
+            </div>
+        {% endfor %}
+    </div>
+{%  endblock %}
